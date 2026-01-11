@@ -1,0 +1,3480 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1220" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="AXE" />
+  <link rel="manifest" href="manifest.json">
+  <title>AXE — v0.1.0</title>
+  <style>
+    :root{
+      --bg0:#0c0f14;
+      --bg1:#101522;
+      --panel:#141a2a;
+      --line:#2a3350;
+      --text:#e9edff;
+      --muted:#aab3db;
+      --accent:#7aa2ff;
+      --good:#4bd9a0;
+      --bad:#ff5c7a;
+      --warn:#ffcc66;
+
+      --cell0: rgba(255,255,255,.035);
+      --cell1: rgba(255,255,255,.055);
+      --cellHL: rgba(122,162,255,.18);
+      --cellMove: rgba(75,217,160,.14);
+      --cellDanger: rgba(255,92,122,.14);
+
+      --shadow: 0 18px 42px rgba(0,0,0,.40);
+      --radius: 18px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --ui: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{ box-sizing:border-box; }
+    html, body{ height:100%; }
+    body{
+      margin:0;
+      font-family:var(--ui);
+      color:var(--text);
+      background: radial-gradient(1200px 800px at 25% 10%, rgba(122,162,255,.14), transparent 60%),
+                  radial-gradient(900px 700px at 80% 30%, rgba(255,92,122,.10), transparent 60%),
+                  linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100dvh;
+      overflow:hidden; /* прокрутка живёт в appMain / titleScreen */
+      overscroll-behavior: none;
+    }
+    .wrap{ max-width:1200px; margin:0 auto; padding:14px 12px 18px; }
+
+    /* App viewport layout (mobile-first) */
+    #appWrap{
+      height: 100dvh;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .appMain{
+      flex: 1;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+    .appMain::-webkit-scrollbar{ width:0; height:0; }
+
+
+    /* ---------- Title Screen ---------- */
+    .titleScreen{
+      position:fixed; inset:0;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      overflow-y:auto;
+      -webkit-overflow-scrolling: touch;
+      padding: calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));
+      z-index: 80;
+      background:
+        radial-gradient(1000px 700px at 20% 15%, rgba(122,162,255,.18), transparent 60%),
+        radial-gradient(900px 700px at 85% 35%, rgba(255,92,122,.12), transparent 60%),
+        linear-gradient(180deg, rgba(12,15,20,.92), rgba(16,21,34,.92));
+      backdrop-filter: blur(6px);
+    }
+    .titleCard{
+      margin-top: 10px;
+      width:min(920px, 100%);
+      border-radius: 26px;
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: 0 30px 80px rgba(0,0,0,.55);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.08));
+      overflow:hidden;
+    }
+    .titleHead{
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      flex-wrap:wrap;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .axeMark{ display:flex; gap:12px; align-items:center; }
+    .axeLogo{
+      width:48px; height:48px;
+      border-radius: 16px;
+      display:grid; place-items:center;
+      font-weight: 950;
+      letter-spacing:.6px;
+      background: linear-gradient(135deg, rgba(122,162,255,.95), rgba(255,92,122,.85));
+      box-shadow: 0 16px 30px rgba(0,0,0,.35);
+      user-select:none;
+    }
+    .axeTitle{ font-size: 22px; font-weight: 950; letter-spacing: .4px; line-height: 1.0; }
+    .axeSub{ margin-top:4px; color: var(--muted); font-size: 13px; line-height: 1.25; }
+    .ver{
+      font-family: var(--mono);
+      color: rgba(233,237,255,.86);
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      user-select:none;
+    }
+    .titleBody{
+      padding: 16px 18px 18px;
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 14px;
+    }
+    @media (max-width: 860px){
+      .titleBody{ grid-template-columns: 1fr; }
+    }
+    .tile{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: 20px;
+      background: rgba(0,0,0,.14);
+      padding: 14px;
+    }
+    .tile h3{ margin:0 0 8px; font-size: 13px; letter-spacing:.2px; }
+    .tile p{ margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .titleBtns{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-start;
+      margin-top: 12px;
+    }
+
+    /* ---------- Topbar ---------- */
+    .topbar{
+      display:flex; flex-wrap:wrap; gap:10px;
+      align-items:center; justify-content:space-between;
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(0,0,0,0));
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+    }
+    .brand{ display:flex; gap:10px; align-items:center; }
+    .logo{
+      width:36px; height:36px; border-radius: 12px;
+      display:grid; place-items:center;
+      font-weight: 900;
+      background: linear-gradient(135deg, rgba(122,162,255,.95), rgba(255,92,122,.80));
+      box-shadow: 0 10px 22px rgba(0,0,0,.30);
+      letter-spacing: .5px;
+      user-select:none;
+    }
+    .brand .t1{ font-weight:800; font-size:14px; line-height:1.05; }
+    .brand .t2{ font-size:12px; color:var(--muted); margin-top:2px; }
+
+    .row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .pill{
+      display:flex; align-items:center; gap:8px;
+      border:1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: rgba(255,255,255,.03);
+      color:var(--muted);
+      font-size:12px;
+    }
+    select, button{
+      font-family:inherit;
+      color:var(--text);
+      background: rgba(255,255,255,.03);
+      border:1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 10px;
+      outline:none;
+      cursor:pointer;
+      font-size: 13px;
+    }
+    select{ cursor:pointer; }
+    button.primary{ border-color: rgba(122,162,255,.50); background: rgba(122,162,255,.12); }
+    button.good{ border-color: rgba(75,217,160,.45); background: rgba(75,217,160,.10); }
+    button.bad{ border-color: rgba(255,92,122,.45); background: rgba(255,92,122,.10); }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    /* ---------- Layout ---------- */
+    .grid2{
+      margin-top: 12px;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap: 12px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid2{ grid-template-columns: 1fr; }
+    }
+    .panel{
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(20,26,42,.85);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel .head{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 10px 12px;
+      border-bottom:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,0));
+    }
+    .panel .head b{ font-size: 13px; }
+    .panel .body{ padding: 12px; }
+    .tag{
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      color: var(--muted);
+      background: rgba(0,0,0,.12);
+      user-select:none;
+    }
+    .tag.good{ border-color: rgba(75,217,160,.45); color: var(--good); }
+    .tag.bad{ border-color: rgba(255,92,122,.45); color: var(--bad); }
+    .tag.warn{ border-color: rgba(255,204,102,.45); color: var(--warn); }
+
+    /* ---------- Board ---------- */
+    .boardWrap{ padding: 12px; }
+    .boardShell{
+      border:1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(0,0,0,.10);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+      padding: 12px;
+      overflow:hidden;
+    }
+    .board{
+      width: min(80vw, 720px);
+      max-width: 100%;
+      aspect-ratio: 1 / 1;
+      display:grid;
+      grid-template-columns: repeat(9, 1fr);
+      grid-template-rows: repeat(9, 1fr);
+      gap: 6px;
+      position: relative;
+      margin: 0 auto;
+      transition: transform .25s ease;
+    }
+    .board.flip{ transform: rotate(180deg); }
+    .cell{
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: 12px;
+      background: var(--cell0);
+      position:relative;
+      overflow:hidden;
+      user-select:none;
+    }
+    .cell.dark{ background: var(--cell1); }
+    .cell::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(220px 180px at 20% 20%, rgba(255,255,255,.06), transparent 60%);
+      opacity:.65;
+      pointer-events:none;
+    }
+    .cell.hl{ background: var(--cellHL); border-color: rgba(122,162,255,.35); }
+    .cell.move{ background: var(--cellMove); border-color: rgba(75,217,160,.35); }
+
+    .coord{
+      position:absolute;
+      bottom:6px; right:7px;
+      font-size: 10px;
+      color: rgba(170,179,219,.55);
+      font-family: var(--mono);
+      pointer-events:none;
+      transform: translateZ(0);
+    }
+
+    /* ---------- Pieces ---------- */
+    .piece{
+      position:absolute;
+      inset: 8px;
+      display:grid;
+      place-items:center;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: 0 10px 22px rgba(0,0,0,.30);
+      cursor:pointer;
+      transform: translateZ(0);
+      transition: transform .12s ease, box-shadow .12s ease, opacity .18s ease;
+      will-change: transform, opacity;
+    }
+    .board.flip .piece{ transform: rotate(180deg); }
+
+    .piece.white{ background: linear-gradient(180deg, rgba(235,240,255,.22), rgba(255,255,255,.06)); }
+    .piece.black{ background: linear-gradient(180deg, rgba(30,38,60,.55), rgba(0,0,0,.10)); }
+
+    .piece.selected{
+      box-shadow: 0 0 0 2px rgba(122,162,255,.65), 0 16px 30px rgba(0,0,0,.35);
+      transform: translateZ(0) scale(1.03);
+    }
+    .piece .inner{
+      width: 100%;
+      height: 100%;
+      display:grid;
+      place-items:center;
+      position:relative;
+    }
+    @keyframes upgradeFlash {
+      0%   { transform: scale(1); filter: drop-shadow(0 10px 14px rgba(0,0,0,.28)); }
+      45%  { transform: scale(1.12); filter: drop-shadow(0 18px 24px rgba(122,162,255,.22)); }
+      100% { transform: scale(1); filter: drop-shadow(0 10px 14px rgba(0,0,0,.28)); }
+    }
+    .piece.upgrading .shape{ animation: upgradeFlash .22s ease; }
+    @keyframes shatter {
+      0%   { transform: scale(1); opacity: 1; filter: blur(0px); }
+      55%  { transform: scale(1.15); opacity: .95; }
+      100% { transform: scale(.70); opacity: 0; filter: blur(1px); }
+    }
+    .piece.captured{ animation: shatter .25s ease forwards; }
+
+    .shape{
+      width: 64%;
+      height: 64%;
+      filter: drop-shadow(0 10px 14px rgba(0,0,0,.28));
+      position:relative;
+      display:grid;
+      place-items:center;
+      background: rgba(232,237,255,.92);
+    }
+    .black .shape{ background: rgba(30,36,55,.92); }
+
+    .r1 .shape{ border-radius: 999px; }
+    .r2 .shape{ clip-path: polygon(50% 8%, 92% 88%, 8% 88%); }
+    .r3 .shape{ clip-path: polygon(50% 6%, 94% 50%, 50% 94%, 6% 50%); border-radius: 10px; }
+    .r4 .shape{ clip-path: polygon(25% 10%, 75% 10%, 95% 50%, 75% 90%, 25% 90%, 5% 50%); border-radius: 10px; }
+    .r5 .shape{ clip-path: polygon(10% 80%, 10% 35%, 28% 45%, 40% 25%, 50% 45%, 60% 25%, 72% 45%, 90% 35%, 90% 80%); border-radius: 12px; }
+
+    .glyph{
+      font-family: var(--mono);
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing:.5px;
+      color: rgba(0,0,0,.75);
+      mix-blend-mode: multiply;
+      user-select:none;
+    }
+    .black .glyph{ color: rgba(255,255,255,.88); mix-blend-mode: screen; }
+
+    .badge{
+      position:absolute;
+      top:6px; left:6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.18);
+      color: rgba(233,237,255,.92);
+      user-select:none;
+      pointer-events:none;
+    }
+    .iconRow{
+      position:absolute;
+      bottom:6px; left:6px;
+      display:flex; gap:6px; align-items:center;
+      pointer-events:none;
+    }
+    .ic{
+      font-size: 12px;
+      padding: 0 6px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.14);
+      color: rgba(233,237,255,.92);
+      font-family: var(--mono);
+      line-height: 18px;
+      height: 18px;
+      display:inline-grid;
+      place-items:center;
+    }
+    .ic.mass{ color: var(--warn); }
+    .ic.shield{ color: var(--good); }
+    .ic.stuck{ color: var(--bad); }
+
+    /* ---------- Sidebar ---------- */
+    .kv{
+      display:flex; justify-content:space-between; align-items:center;
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 10px;
+      background: rgba(255,255,255,.03);
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+    .kv .k{ color:var(--muted); font-size:12px; }
+    .kv .v{ font-family: var(--mono); font-size: 13px; text-align:right; }
+    .sep{ height:10px; }
+
+    .actions{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .hint{
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      border: 1px dashed rgba(255,255,255,.14);
+      border-radius: 14px;
+      padding: 10px;
+      background: rgba(0,0,0,.12);
+      white-space: pre-wrap;
+    }
+
+    .toast{
+      position: fixed;
+      bottom: 14px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15,18,28,.92);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+      padding: 10px 12px;
+      border-radius: 14px;
+      color: var(--text);
+      max-width: min(92vw, 820px);
+      z-index: 50;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .15s ease, transform .15s ease;
+    }
+    .toast.show{ opacity:1; transform: translateX(-50%) translateY(-4px); }
+
+    /* ---------- Modal / Overlay ---------- */
+    .overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.62);
+      display:none;
+      place-items:center;
+      z-index: 60;
+      padding: 16px;
+    }
+    .overlay.show{ display:grid; }
+    .modal{
+      width: min(860px, 95vw);
+      max-height: 90vh;
+      overflow:auto;
+      background: rgba(18,22,34,.96);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .modal .mhead{
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      margin-bottom: 10px;
+    }
+    .modal h2{
+      margin:0;
+      font-size: 14px;
+      letter-spacing:.2px;
+    }
+    .modal .mtext{
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+    .modal .mtext b{ color: var(--text); }
+
+    .bigWarn{
+      width: min(720px, 95vw);
+      border-radius: 24px;
+      padding: 18px;
+      background: rgba(18,22,34,.96);
+      border:1px solid rgba(255,92,122,.40);
+      box-shadow: 0 28px 60px rgba(0,0,0,.55);
+      text-align:center;
+    }
+    .bigWarn .w1{
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--bad);
+      letter-spacing:.2px;
+    }
+    .bigWarn .w2{
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .bigWarn .wbtn{
+      margin-top: 12px;
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .statsGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    @media (max-width: 980px){
+      .statsGrid{ grid-template-columns: 1fr; }
+    }
+  
+    /* ---------- Responsive polish (phone) ---------- */
+    @media (max-width: 640px){
+      .wrap{ padding: 10px 10px 14px; }
+      .topbar{ position: sticky; top: 0; z-index: 40; backdrop-filter: blur(10px); }
+      .topbar{ padding: 10px 10px; border-radius: 16px; }
+      .brand .t1{ font-size: 13px; }
+      .brand .t2{ font-size: 11px; }
+
+      /* сделать панель кнопок в топбаре прокручиваемой по горизонтали */
+      .topbar .row{
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        padding-bottom: 2px;
+      }
+      .topbar .row::-webkit-scrollbar{ width:0; height:0; }
+      .pill, button, select{ flex: 0 0 auto; }
+
+      .grid2{ gap: 10px; }
+      .panel{ border-radius: 16px; }
+      .panel .head{ padding: 10px 10px; }
+      .panel .body{ padding: 10px; }
+
+      .boardWrap{ padding: 10px; }
+      .boardShell{ padding: 10px; border-radius: 18px; }
+      .board{ width: min(92vw, 520px); gap: 4px; }
+      .cell{ border-radius: 10px; }
+      .piece{ inset: 6px; border-radius: 12px; }
+      .shape{ width: 62%; height: 62%; }
+      .glyph{ font-size: 13px; }
+
+      .actions{ grid-template-columns: 1fr; }
+      #btnResign{ grid-column: auto !important; }
+      .statsGrid{ grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 420px){
+      .titleHead{ padding: 14px 14px 12px; }
+      .titleBody{ padding: 12px 14px 14px; }
+      .tile{ padding: 12px; border-radius: 18px; }
+      .titleBtns button{ width: 100%; }
+      .titleBtns{ width: 100%; }
+      .row{ gap: 8px; }
+      .pill{ width: 100%; justify-content: space-between; }
+      .pill select{ width: 140px; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="titleScreen" class="titleScreen" aria-label="Title screen">
+    <div class="titleCard">
+      <div class="titleHead">
+        <div class="axeMark">
+          <div class="axeLogo">AXE</div>
+          <div>
+            <div class="axeTitle">AXE</div>
+            <div class="axeSub" id="titleSub">
+              Асимметричная пошаговая стратегия на 9×9. Захват — это лишение ходов. Вся власть — в печатях.
+            </div>
+          </div>
+        </div>
+        <div class="ver" id="verBadge">v0.1.0</div>
+      </div>
+
+      <div class="titleBody">
+        <div class="tile">
+          <h3 id="tileHow">Как играть</h3>
+          <p id="tileHowText">
+            • Цель: подчинить Императора врага.<br>
+            • Подчинение: если у фигуры 0 ходов (проверка после каждого действия).<br>
+            • SETUP: ставь/апгрейдь сколько хочешь, затем «Передать ход».<br>
+            • PLAY: 1 действие = конец хода.
+          </p>
+          <div class="titleBtns">
+            <button id="btnPlay" class="primary">Play</button>
+            <button id="btnTitleRules">Rulebook</button>
+            <button id="btnTitleChangelog">Changelog</button>
+          </div>
+        </div>
+
+        <div class="tile">
+          <h3 id="tileQuick">Быстрые настройки</h3>
+          <p id="tileQuickText">Выбери режимы сторон и язык, потом жми Play.</p>
+          <div class="sep"></div>
+          <div class="row" style="gap:10px;">
+            <div class="pill">
+              <span id="lblWhiteTitle">White</span>
+              <select id="whiteCtrlTitle">
+                <option value="HUMAN">Human</option>
+                <option value="EASY">Bot Easy</option>
+                <option value="NORMAL" selected>Bot Normal</option>
+                <option value="HARD">Bot Hard</option>
+              </select>
+            </div>
+            <div class="pill">
+              <span id="lblBlackTitle">Black</span>
+              <select id="blackCtrlTitle">
+                <option value="HUMAN">Human</option>
+                <option value="EASY">Bot Easy</option>
+                <option value="NORMAL" selected>Bot Normal</option>
+                <option value="HARD">Bot Hard</option>
+              </select>
+            </div>
+            <div class="pill">
+              <span id="lblLangTitle">UI</span>
+              <select id="langTitle">
+                <option value="ru" selected>RU</option>
+                <option value="en">EN</option>
+              </select>
+            </div>
+          </div>
+          <div class="sep"></div>
+          <div class="row" style="gap:10px;">
+            <button id="btnTitleSound" class="good">Sound: ON</button>
+            <button id="btnTitleNew" class="bad">Reset</button>
+          </div>
+          <div class="sep"></div>
+          <p id="tileNote" style="color:var(--muted); font-size:12px; line-height:1.35; margin:0;">
+            ⚠ Если ты сам себя заблокировал — это твоя ошибка. Мы лишь предупреждаем о явном самоматe.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" id="appWrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">AXE</div>
+        <div>
+          <div class="t1" id="brandTitle">AXE — v0.1.0</div>
+          <div class="t2" id="subTitle">SETUP: свободные действия + «Передать ход»</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill">
+          <span id="lblWhite">White</span>
+          <select id="whiteCtrl">
+            <option value="HUMAN">Human</option>
+            <option value="EASY">Bot Easy</option>
+            <option value="NORMAL" selected>Bot Normal</option>
+            <option value="HARD">Bot Hard</option>
+          </select>
+        </div>
+        <div class="pill">
+          <span id="lblBlack">Black</span>
+          <select id="blackCtrl">
+            <option value="HUMAN">Human</option>
+            <option value="EASY">Bot Easy</option>
+            <option value="NORMAL" selected>Bot Normal</option>
+            <option value="HARD">Bot Hard</option>
+          </select>
+        </div>
+
+        <button id="btnNew" class="primary">New</button>
+        <button id="btnUndo">Undo</button>
+        <button id="btnFlip">Flip</button>
+        <button id="btnRules">Rulebook</button>
+
+        <div class="pill">
+          <span>UI</span>
+          <select id="lang">
+            <option value="ru" selected>RU</option>
+            <option value="en">EN</option>
+          </select>
+        </div>
+
+        <button id="btnSound" class="good">Sound: ON</button>
+      </div>
+    </div>
+
+
+    <div id="appMain" class="appMain">
+    <div class="grid2">
+      <div class="panel">
+        <div class="head">
+          <b id="hdrBoard">Board</b>
+          <div class="row" style="gap:8px;">
+            <span id="phaseTag" class="tag warn">SETUP</span>
+            <span id="turnTag" class="tag">Turn: WHITE</span>
+            <span id="verTag" class="tag">v0.1.0</span>
+          </div>
+        </div>
+        <div class="body boardWrap">
+          <div class="boardShell">
+            <div id="board" class="board" aria-label="AXE board"></div>
+          </div>
+          <div class="sep"></div>
+          <div class="hint" id="hintText"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="head">
+          <b id="hdrControl">Control</b>
+          <span id="statusTag" class="tag">idle</span>
+        </div>
+        <div class="body">
+          <div class="kv">
+            <div class="k" id="lblSealsW">Seals (White)</div>
+            <div class="v" id="sealsW">25</div>
+          </div>
+          <div class="kv">
+            <div class="k" id="lblSealsB">Seals (Black)</div>
+            <div class="v" id="sealsB">25</div>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="actions">
+            <button id="btnPlace" class="primary">Place (Novik)</button>
+            <button id="btnUpgrade">Upgrade (+1)</button>
+
+            <button id="btnShield">Shield (Lord)</button>
+            <button id="btnPass" class="good">Передать ход</button>
+
+            <button id="btnStartPlay" class="primary">Start PLAY</button>
+            <button id="btnStopBots" class="bad">Stop Bots</button>
+
+            <button id="btnResign" class="bad" style="grid-column: 1 / span 2;">Сдаться</button>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="hint" id="sideHint"></div>
+
+          <div class="sep"></div>
+
+          <div class="panel" style="border-radius:14px; border:1px solid var(--line); background:rgba(0,0,0,.10); box-shadow:none;">
+            <div class="head" style="border-radius:14px 14px 0 0;">
+              <b id="hdrStats">Stats</b>
+              <span class="tag" id="statsTag">live</span>
+            </div>
+            <div class="body">
+              <div class="statsGrid">
+                <div class="kv" style="margin:0;">
+                  <div class="k" id="stMovesK">Moves</div>
+                  <div class="v" id="stMovesV">0</div>
+                </div>
+                <div class="kv" style="margin:0;">
+                  <div class="k" id="stTimeK">Duration</div>
+                  <div class="v" id="stTimeV">0:00</div>
+                </div>
+                <div class="kv" style="margin:0;">
+                  <div class="k" id="stWSubK">White subjugated</div>
+                  <div class="v" id="stWSubV">0</div>
+                </div>
+                <div class="kv" style="margin:0;">
+                  <div class="k" id="stBSubK">Black subjugated</div>
+                  <div class="v" id="stBSubV">0</div>
+                </div>
+                <div class="kv" style="margin:0;">
+                  <div class="k" id="stWLostK">White lost</div>
+                  <div class="v" id="stWLostV">0</div>
+                </div>
+                <div class="kv" style="margin:0;">
+                  <div class="k" id="stBLostK">Black lost</div>
+                  <div class="v" id="stBLostV">0</div>
+                </div>
+                <div class="kv" style="margin:0; grid-column: 1 / span 2;">
+                  <div class="k" id="stAvgK">Avg move time</div>
+                  <div class="v" id="stAvgV">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+    </div>
+
+  <div id="toast" class="toast"></div>
+
+  <div id="rulesOverlay" class="overlay" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="mhead">
+        <h2 id="rulesTitle">Rulebook</h2>
+        <div class="row">
+          <button id="rulesClose">Close</button>
+        </div>
+      </div>
+      <div class="mtext" id="rulesText"></div>
+    </div>
+  </div>
+
+  <div id="logOverlay" class="overlay" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="mhead">
+        <h2 id="logTitle">Changelog</h2>
+        <div class="row">
+          <button id="logClose">Close</button>
+        </div>
+      </div>
+      <div class="mtext" id="logText"></div>
+    </div>
+  </div>
+
+  <div id="warnOverlay" class="overlay" role="dialog" aria-modal="true">
+    <div class="bigWarn">
+      <div class="w1" id="warnTitle">ты сейчас сам себе мат поставишь</div>
+      <div class="w2" id="warnBody">Действие запрещено: после него у твоего Императора будет 0 легальных ходов.</div>
+      <div class="wbtn">
+        <button id="warnOk" class="primary">Ок</button>
+        <button id="warnRules">Rulebook</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="mhead">
+        <h2 id="goTitle">Game Over</h2>
+        <div class="row">
+          <button id="goClose">Close</button>
+        </div>
+      </div>
+      <div class="mtext" id="goText"></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const VERSION = "v0.1.0";
+
+  const CHANGELOG = {
+    v010: [
+      "Добавлен Title / Play экран.",
+      "Добавлены Version badge и Changelog.",
+      "Звуки (WebAudio) + микро-анимации апгрейда и подчинения (не влияют на механику).",
+      "Rulebook заполнен основными правилами.",
+      "Новики/Воины разворачивают направление движения, достигнув края доски.",
+      "Боты в SETUP: случайный бюджет печатей + обязательные условия прокачки.",
+      "Усилен бот: глубже анализ, больше апгрейдов, меньше 'император-бегун'.",
+      "НОВОЕ: стартовые печати 25; статистика партии; кнопка 'Сдаться'.",
+      "НОВОЕ: запрет диагонали через 'угол' (если обе ортогональные клетки заняты).",
+    ]
+  };
+
+  /* =========================
+     I18N
+     ========================= */
+  const I18N = {
+    ru: {
+      titleSub: "Асимметричная пошаговая стратегия на 9×9. Захват — это лишение ходов. Вся власть — в печатях.",
+      tileHow: "Как играть",
+      tileQuick: "Быстрые настройки",
+      tileQuickText: "Выбери режимы сторон и язык, потом жми Play.",
+      play: "Play",
+      changelog: "Changelog",
+      reset: "Reset",
+      soundOn: "Sound: ON",
+      soundOff: "Sound: OFF",
+      stats: "Stats",
+
+      subTitle: "SETUP: свободные действия + «Передать ход»",
+      board: "Board",
+      control: "Control",
+      rulesTitle: "Rulebook",
+      close: "Close",
+      new: "New",
+      undo: "Undo",
+      flip: "Flip",
+      rules: "Rulebook",
+      white: "White",
+      black: "Black",
+      phaseSetup: "SETUP",
+      phasePlay: "PLAY",
+      phaseEnd: "END",
+      turn: "Turn",
+      sealsW: "Печати (Белые)",
+      sealsB: "Печати (Чёрные)",
+      place: "Place (Новик)",
+      upgrade: "Upgrade (+1)",
+      shield: "Shield (Владыка)",
+      pass: "Передать ход",
+      startPlay: "Start PLAY",
+      stopBots: "Stop Bots",
+      resign: "Сдаться",
+      idle: "idle",
+      thinking: "бот думает…",
+      stopped: "stopped",
+      winner: "Победа",
+      draw: "Ничья",
+      cannotUndoAfterPass: "Undo запрещён после передачи хода.",
+      needSelectOwnPiece: "Выбери свою фигуру.",
+      needSelectUpgradeable: "Эту фигуру нельзя улучшить.",
+      needSelectLord: "Нужно выбрать Владыку (R4).",
+      shieldMode: "Режим щита: кликай по соседним союзным фигурам (до 2), чтобы дать/снять 🛡.",
+      placeMode: "Режим постановки: кликай по пустой клетке на своей половине.",
+      moveMode: "Клик по своей фигуре → покажу ходы. Клик по клетке хода → Move.",
+      setupHint:
+`SETUP:
+• Двигаться нельзя.
+• Place/Upgrade можно делать сколько угодно.
+• Смена стороны — кнопкой «Передать ход» (нельзя пасс-пасс без действия).
+• В PLAY можно перейти только когда у обеих сторон есть хотя бы одна фигура кроме Императора.`,
+      playHint:
+`PLAY:
+• Один ход = одно действие: Move / Place / Upgrade.
+• Затем ход автоматически переходит сопернику.
+• Подчинение проверяется автоматически после каждого действия.`,
+      cantStartPlay: "Нельзя начать PLAY: у одной из сторон нет фигур кроме Императора.",
+      passNeedAction: "Сначала сделай хотя бы одно действие перед передачей хода.",
+      selfMateWarn: "ты сейчас сам себе мат поставишь",
+      selfMateBody: "Действие запрещено: после него у твоего Императора будет 0 легальных ходов.",
+      ok: "Ок",
+      startedPlay: "PLAY начался.",
+      savedByUndo: "Отменено.",
+      notYourTurn: "Сейчас не твой ход.",
+      resigned: (s) => `Сторона ${s} сдалась.`,
+      gameOver: (s) => `Игра окончена: ${s}.`,
+      logTitle: "Changelog",
+      logText: `v0.1.0\n- ${CHANGELOG.v010.join("\n- ")}`,
+
+      goTitle: "Game Over",
+      goClose: "Close",
+
+      stMovesK: "Ходы",
+      stTimeK: "Длительность",
+      stWSubK: "Белые подчинили",
+      stBSubK: "Чёрные подчинили",
+      stWLostK: "Белые потеряли",
+      stBLostK: "Чёрные потеряли",
+      stAvgK: "Среднее время хода",
+
+      rulebookText:
+`AXE — Rulebook (v0.1.0)
+
+1) Цель
+• Цель игры — подчинить Императора противника (R5).
+• Нет “классического захвата”: фигуры не снимаются ходом как в шахматах.
+
+2) Доска и старт
+• Доска 9×9.
+• Императоры ставятся сразу:
+  - White: верхний ряд, центр (x=4, y=0)
+  - Black: нижний ряд, центр (x=4, y=8)
+
+3) Фазы
+SETUP:
+• Двигаться нельзя.
+• Можно ставить Новиков (Place) и улучшать фигуры (Upgrade) сколько угодно.
+• Смена стороны происходит кнопкой «Передать ход».
+• Нельзя передать ход обратно без действия (нет пасс-пасс).
+• В PLAY можно перейти только если у каждой стороны есть хотя бы 1 фигура кроме Императора.
+
+PLAY:
+• Один ход = одно действие:
+  - Move (перемещение)
+  - Place (постановка Новика)
+  - Upgrade (повышение ранга)
+• После действия ход заканчивается автоматически.
+
+4) Печати (ресурс)
+• Старт: 25 печатей у каждой стороны.
+• Тратятся на:
+  - Place Новика: −1
+  - Upgrade (+1 ранг): −1
+• Подчинение даёт печати = ранг подчинённой фигуры.
+
+5) Ранги и фигуры
+R1 Новик — основа массы
+R2 Воин — слабый, как задумано
+R3 Регент — ключевой “ломатель”
+R4 Владыка — защита/контроль
+R5 Император — потеря = поражение
+
+6) Ходы (без прыжков, без захвата)
+R1 Новик:
+• 1 клетка: вперёд, влево, вправо (назад нельзя).
+R2 Воин:
+• 1–2 клетки: вперёд и диагонали вперёд (без прыжков).
+R3 Регент:
+• 1–3 клетки во все стороны.
+R4 Владыка:
+• 1–2 клетки во все стороны (без прыжков).
+R5 Император:
+• 1–2 клетки во все стороны (без прыжков).
+
+ВАЖНО: Разворот направления для Новика/Воина
+• Если Новик или Воин дошёл до противоположного края доски,
+  его “вперёд” разворачивается.
+
+ВАЖНО: Диагональ “через угол” запрещена
+• Если диагональный шаг перекрыт двумя фигурами по сторонам
+  (обе ортогональные клетки заняты), диагональ недоступна.
+
+7) Подчинение (главная механика)
+• Если у фигуры 0 легальных ходов → она подчинена.
+• Подчинение проверяется автоматически после любого действия: Move / Place / Upgrade.
+• Подчинённая фигура (кроме Императора) разбирается в печати и удаляется.
+• Если подчинён Император → игра сразу окончена.
+
+8) Масса (⚖)
+• Масса = 3+ Новика подряд по линии: горизонталь / вертикаль / диагональ.
+• Новики в Массе НЕ МОГУТ быть подчинены фигурами ниже Регента:
+  ❌ Новик (R1) ❌ Воин (R2) ✅ Регент (R3) ✅ Владыка (R4) ✅ Император (R5)
+• Если линия разорвана — Масса исчезает у тех Новиков, кто перестал быть в линии.
+
+9) Владыка — защита (🛡)
+• Каждый Владыка защищает до 2 союзных фигур:
+  - радиус: 1 клетка вокруг Владыки
+  - только фигуры ниже Владыки (R1–R3)
+• НЕ защищает: других Владык, Императора, Массу.
+• Защищённую фигуру нельзя подчинить даже при 0 ходов.
+
+10) Place (постановка)
+• Можно в SETUP и PLAY.
+• Только на своей половине:
+  - White: ряды 0..3
+  - Black: ряды 5..8
+• Только если клетка пустая И у Новика есть минимум 2 легальных хода в момент постановки.
+
+11) Upgrade (улучшение)
+• +1 ранг за 1 печать. Императора улучшать нельзя.
+
+12) Сдаться
+• Кнопка «Сдаться» завершает игру победой соперника.
+
+13) Философия
+• Никаких “сейвов от дурака”.
+• Ты можешь проиграть, заблокировав себя — это часть игры.
+• Мы только предупреждаем о явном самоматe (0 ходов у Императора).`
+    },
+
+    en: {
+      titleSub: "Asymmetric 9×9 turn-based strategy. Capture = remove moves. Power flows through seals.",
+      tileHow: "How to play",
+      tileQuick: "Quick settings",
+      tileQuickText: "Pick side modes and language, then press Play.",
+      play: "Play",
+      changelog: "Changelog",
+      reset: "Reset",
+      soundOn: "Sound: ON",
+      soundOff: "Sound: OFF",
+      stats: "Stats",
+
+      subTitle: "SETUP: free actions + “Pass turn”",
+      board: "Board",
+      control: "Control",
+      rulesTitle: "Rulebook",
+      close: "Close",
+      new: "New",
+      undo: "Undo",
+      flip: "Flip",
+      rules: "Rulebook",
+      white: "White",
+      black: "Black",
+      phaseSetup: "SETUP",
+      phasePlay: "PLAY",
+      phaseEnd: "END",
+      turn: "Turn",
+      sealsW: "Seals (White)",
+      sealsB: "Seals (Black)",
+      place: "Place (Novik)",
+      upgrade: "Upgrade (+1)",
+      shield: "Shield (Lord)",
+      pass: "Pass turn",
+      startPlay: "Start PLAY",
+      stopBots: "Stop Bots",
+      resign: "Resign",
+      idle: "idle",
+      thinking: "bot thinking…",
+      stopped: "stopped",
+      winner: "Winner",
+      draw: "Draw",
+      cannotUndoAfterPass: "Undo is disabled after passing the turn.",
+      needSelectOwnPiece: "Select your piece.",
+      needSelectUpgradeable: "This piece cannot be upgraded.",
+      needSelectLord: "Select a Lord (R4).",
+      shieldMode: "Shield mode: click adjacent friendly pieces (up to 2) to add/remove 🛡.",
+      placeMode: "Place mode: click an empty cell on your half.",
+      moveMode: "Click your piece → show moves. Click a move cell → Move.",
+      setupHint:
+`SETUP:
+• No movement.
+• Place/Upgrade as much as you want.
+• Switch sides via “Pass turn” (no pass-pass without an action).
+• You can enter PLAY only when both sides have at least 1 non-Emperor piece.`,
+      playHint:
+`PLAY:
+• One turn = one action: Move / Place / Upgrade.
+• Then the turn passes automatically.
+• Subjugation is checked automatically after each action.`,
+      cantStartPlay: "Cannot start PLAY: one side has no pieces besides the Emperor.",
+      passNeedAction: "Do at least one action before passing.",
+      selfMateWarn: "You are about to self-checkmate",
+      selfMateBody: "Action blocked: your Emperor would have 0 legal moves.",
+      ok: "OK",
+      startedPlay: "PLAY started.",
+      savedByUndo: "Undone.",
+      notYourTurn: "Not your turn.",
+      resigned: (s) => `${s} resigned.`,
+      gameOver: (s) => `Game over: ${s}.`,
+      logTitle: "Changelog",
+      logText: `v0.1.0\n- ${CHANGELOG.v010.join("\n- ")}`,
+
+      goTitle: "Game Over",
+      goClose: "Close",
+
+      stMovesK: "Moves",
+      stTimeK: "Duration",
+      stWSubK: "White subjugated",
+      stBSubK: "Black subjugated",
+      stWLostK: "White lost",
+      stBLostK: "Black lost",
+      stAvgK: "Avg move time",
+
+      rulebookText:
+`AXE — Rulebook (v0.1.0)
+
+1) Goal
+• Win by subjugating the enemy Emperor (R5).
+• No classic captures: pieces are not removed by moving onto them.
+
+2) Board & start
+• 9×9 board.
+• Emperors start at:
+  - White: (x=4, y=0)
+  - Black: (x=4, y=8)
+
+3) Phases
+SETUP:
+• No movement.
+• Place Noviks and Upgrade pieces freely.
+• Switch sides via “Pass turn”.
+• No pass-pass without an action.
+• You can enter PLAY only if both sides have at least one non-Emperor piece.
+
+PLAY:
+• One turn = one action: Move / Place / Upgrade.
+• Turn ends automatically after the action.
+
+4) Seals (resource)
+• Start: 25 each.
+• Spend:
+  - Place Novik: −1
+  - Upgrade (+1 rank): −1
+• Subjugation grants seals = victim rank.
+
+5) Ranks
+R1 Novik
+R2 Warrior
+R3 Regent
+R4 Lord
+R5 Emperor (loss = defeat)
+
+6) Movement (no jumps, no captures)
+R1 Novik: 1 step forward/left/right (no backward).
+R2 Warrior: 1–2 steps forward and forward diagonals (no jumps).
+R3 Regent: 1–3 steps any direction.
+R4 Lord: 1–2 steps any direction.
+R5 Emperor: 1–2 steps any direction.
+
+Direction flip (Novik/Warrior):
+• When a Novik or Warrior reaches the far edge, its “forward” flips.
+
+Diagonal corner rule:
+• A diagonal step is blocked if both orthogonal adjacent squares are occupied.
+
+7) Subjugation (core)
+• A piece with 0 legal moves is subjugated.
+• Checked automatically after every action (Move/Place/Upgrade).
+• Non-Emperor pieces are dismantled into seals and removed.
+• If Emperor is subjugated → game ends immediately.
+
+8) Mass (⚖)
+• Mass = 3+ Noviks in a straight line (H/V/diagonal).
+• Mass Noviks cannot be subjugated by pieces below Regent:
+  ❌ R1/R2 ✅ R3/R4/R5
+• Break the line → Mass disappears for affected Noviks.
+
+9) Lord protection (🛡)
+• Each Lord protects up to 2 adjacent friendly pieces (radius 1), ranks R1–R3 only.
+• Does NOT protect other Lords, the Emperor, or Mass Noviks.
+• Protected pieces cannot be subjugated even at 0 moves.
+
+10) Place
+• Allowed in SETUP and PLAY.
+• Only on your half:
+  - White rows 0..3
+  - Black rows 5..8
+• Cell must be empty AND placed Novik must have ≥2 legal moves immediately.
+
+11) Upgrade
+• +1 rank for 1 seal.
+• Emperor cannot be upgraded.
+
+12) Resign
+• “Resign” ends the game in opponent’s favor.`
+    }
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const boardEl = $("board");
+
+  const ui = {
+    titleScreen: $("titleScreen"),
+    btnPlay: $("btnPlay"),
+    btnTitleRules: $("btnTitleRules"),
+    btnTitleChangelog: $("btnTitleChangelog"),
+    btnTitleSound: $("btnTitleSound"),
+    btnTitleNew: $("btnTitleNew"),
+    whiteCtrlTitle: $("whiteCtrlTitle"),
+    blackCtrlTitle: $("blackCtrlTitle"),
+    langTitle: $("langTitle"),
+    lblWhiteTitle: $("lblWhiteTitle"),
+    lblBlackTitle: $("lblBlackTitle"),
+    lblLangTitle: $("lblLangTitle"),
+    titleSub: $("titleSub"),
+    tileHow: $("tileHow"),
+    tileQuick: $("tileQuick"),
+    tileQuickText: $("tileQuickText"),
+    verBadge: $("verBadge"),
+
+    brandTitle: $("brandTitle"),
+    subTitle: $("subTitle"),
+    hdrBoard: $("hdrBoard"),
+    hdrControl: $("hdrControl"),
+    phaseTag: $("phaseTag"),
+    turnTag: $("turnTag"),
+    verTag: $("verTag"),
+    statusTag: $("statusTag"),
+
+    sealsW: $("sealsW"),
+    sealsB: $("sealsB"),
+
+    btnNew: $("btnNew"),
+    btnUndo: $("btnUndo"),
+    btnFlip: $("btnFlip"),
+    btnRules: $("btnRules"),
+    btnSound: $("btnSound"),
+
+    btnPlace: $("btnPlace"),
+    btnUpgrade: $("btnUpgrade"),
+    btnShield: $("btnShield"),
+    btnPass: $("btnPass"),
+    btnStartPlay: $("btnStartPlay"),
+    btnStopBots: $("btnStopBots"),
+    btnResign: $("btnResign"),
+
+    whiteCtrl: $("whiteCtrl"),
+    blackCtrl: $("blackCtrl"),
+    lang: $("lang"),
+
+    hintText: $("hintText"),
+    sideHint: $("sideHint"),
+
+    toast: $("toast"),
+
+    rulesOverlay: $("rulesOverlay"),
+    rulesTitle: $("rulesTitle"),
+    rulesText: $("rulesText"),
+    rulesClose: $("rulesClose"),
+
+    logOverlay: $("logOverlay"),
+    logTitle: $("logTitle"),
+    logText: $("logText"),
+    logClose: $("logClose"),
+
+    warnOverlay: $("warnOverlay"),
+    warnTitle: $("warnTitle"),
+    warnBody: $("warnBody"),
+    warnOk: $("warnOk"),
+    warnRules: $("warnRules"),
+
+    gameOverOverlay: $("gameOverOverlay"),
+    goTitle: $("goTitle"),
+    goText: $("goText"),
+    goClose: $("goClose"),
+
+    lblWhite: $("lblWhite"),
+    lblBlack: $("lblBlack"),
+    lblSealsW: $("lblSealsW"),
+    lblSealsB: $("lblSealsB"),
+
+    hdrStats: $("hdrStats"),
+    statsTag: $("statsTag"),
+    stMovesK: $("stMovesK"),
+    stTimeK: $("stTimeK"),
+    stWSubK: $("stWSubK"),
+    stBSubK: $("stBSubK"),
+    stWLostK: $("stWLostK"),
+    stBLostK: $("stBLostK"),
+    stAvgK: $("stAvgK"),
+
+    stMovesV: $("stMovesV"),
+    stTimeV: $("stTimeV"),
+    stWSubV: $("stWSubV"),
+    stBSubV: $("stBSubV"),
+    stWLostV: $("stWLostV"),
+    stBLostV: $("stBLostV"),
+    stAvgV: $("stAvgV"),
+  };
+
+  /* ---------- Helpers ---------- */
+  const SIZE = 9;
+  const SIDES = ["WHITE","BLACK"];
+  const TYPE_BY_RANK = {1:"NOVIK",2:"WARRIOR",3:"REGENT",4:"LORD",5:"EMPEROR"};
+  const GLYPH_BY_RANK = {1:"N",2:"W",3:"R",4:"L",5:"E"};
+  const HALF_ROWS = { WHITE: [0,3], BLACK: [5,8] };
+  const dir8 = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  const dir4Lines = [[1,0],[0,1],[1,1],[1,-1]];
+
+  const otherSide = (s)=> (s==="WHITE" ? "BLACK" : "WHITE");
+  const inBounds = (x,y)=> x>=0 && x<SIZE && y>=0 && y<SIZE;
+
+  function deepClone(obj){ return structuredClone(obj); }
+  function manhattan(ax,ay,bx,by){ return Math.abs(ax-bx)+Math.abs(ay-by); }
+
+  function toast(msg){
+    ui.toast.textContent = msg;
+    ui.toast.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>ui.toast.classList.remove("show"), 1500);
+  }
+
+  function showWarn(title, body){
+    ui.warnTitle.textContent = title;
+    ui.warnBody.textContent = body;
+    ui.warnOverlay.classList.add("show");
+  }
+
+  /* ---------- Sound (WebAudio) ---------- */
+  let soundEnabled = true;
+  let audioCtx = null;
+
+  function ensureAudio(){
+    if (!soundEnabled) return null;
+    if (!audioCtx){
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e){ audioCtx = null; }
+    }
+    return audioCtx;
+  }
+
+  function playTone(freqStart, freqEnd, durationMs, type="sine", gain=0.05){
+    const ctx = ensureAudio();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freqStart, now);
+    if (freqEnd !== freqStart){
+      osc.frequency.exponentialRampToValueAtTime(Math.max(40, freqEnd), now + durationMs/1000);
+    }
+
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(gain, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + durationMs/1000);
+
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + durationMs/1000 + 0.02);
+  }
+
+  function sfxMove(){ playTone(520, 520, 40, "square", 0.03); }
+  function sfxUpgrade(){ playTone(420, 920, 140, "sine", 0.05); }
+  function sfxSubjugate(){ playTone(680, 180, 170, "triangle", 0.06); }
+  function sfxWin(){ playTone(440, 1320, 280, "sine", 0.07); }
+  function sfxWarn(){ playTone(260, 120, 160, "sawtooth", 0.04); }
+
+  /* =========================
+     STATS
+     ========================= */
+  function newStats(){
+    const now = performance.now();
+    return {
+      startTime: now,
+      endTime: null,
+      endedBy: null,           // "subjugation" | "resign"
+      moves: 0,                // count of Move/Place/Upgrade (game actions)
+      whiteSubjugated: 0,       // how many pieces White subjugated
+      blackSubjugated: 0,
+      whiteLost: 0,             // how many pieces White lost (got subjugated)
+      blackLost: 0,
+      totalTurnTimeMs: 0,       // sum of "time between actions" (approx)
+      lastActionTime: now
+    };
+  }
+
+  function statsOnAction(s){
+    const st = s.stats;
+    if (!st) return;
+    const now = performance.now();
+    const dt = Math.max(0, now - st.lastActionTime);
+    st.totalTurnTimeMs += dt;
+    st.lastActionTime = now;
+  }
+
+  function statsOnGameEnd(s, endedBy){
+    if (!s.stats) return;
+    s.stats.endTime = performance.now();
+    s.stats.endedBy = endedBy || s.stats.endedBy || "subjugation";
+  }
+
+  function fmtTime(ms){
+    const sec = Math.max(0, Math.floor(ms/1000));
+    const m = Math.floor(sec/60);
+    const s = sec%60;
+    return `${m}:${String(s).padStart(2,"0")}`;
+  }
+
+  /* ---------- State ---------- */
+  function newState(){
+    const s = {
+      phase: "SETUP", // SETUP | PLAY | END
+      turn: "WHITE",
+      seals: {WHITE: 25, BLACK: 25}, // <- increased to 25
+      board: Array.from({length: SIZE}, ()=> Array(SIZE).fill(null)),
+      pieces: {},        // id -> piece
+      lordLinks: {},     // lordId -> [targetId, ...]
+      nextId: 1,
+      winner: null,
+      massDirty: true,
+      protDirty: true,
+      setup: {
+        actionsSincePass: 0,
+        botPlan: { WHITE: null, BLACK: null }
+      },
+      lastActionWasPass: false,
+      stats: newStats(),
+    };
+
+    createPiece(s, "WHITE", 5, 4, 0, +1);
+    createPiece(s, "BLACK", 5, 4, 8, -1);
+    return s;
+  }
+
+  function createPiece(s, owner, rank, x, y, facing){
+    const id = String(s.nextId++);
+    s.pieces[id] = {
+      id, owner, rank, x, y,
+      facing: (typeof facing === "number" ? facing : (owner==="WHITE" ? +1 : -1)),
+      inMass:false, protectors:[]
+    };
+    s.board[y][x] = id;
+    if (rank === 4) s.lordLinks[id] = s.lordLinks[id] || [];
+    if (rank === 1) s.massDirty = true;
+    s.protDirty = true;
+    return id;
+  }
+
+  function removePiece(s, id){
+    const p = s.pieces[id];
+    if (!p) return;
+    s.board[p.y][p.x] = null;
+
+    if (p.rank === 4) delete s.lordLinks[id];
+    for (const lid of Object.keys(s.lordLinks)){
+      s.lordLinks[lid] = (s.lordLinks[lid]||[]).filter(tid => tid !== id);
+    }
+    delete s.pieces[id];
+
+    if (p.rank === 1) s.massDirty = true;
+    s.protDirty = true;
+  }
+
+  function getEmperor(s, side){
+    for (const p of Object.values(s.pieces)){
+      if (p.owner === side && p.rank === 5) return p;
+    }
+    return null;
+  }
+
+  /* ---------- Direction flip at board ends ---------- */
+  function maybeFlipFacingAtEdge(piece){
+    if (piece.rank !== 1 && piece.rank !== 2) return;
+    if (piece.y === 0 && piece.facing === -1) piece.facing = +1;
+    if (piece.y === SIZE-1 && piece.facing === +1) piece.facing = -1;
+  }
+
+  /* =========================
+     Diagonal corner rule:
+     A diagonal step from (cx,cy) to (cx+dx,cy+dy) is blocked if BOTH
+     orthogonal adjacent squares are occupied: (cx+dx,cy) AND (cx,cy+dy).
+     Works for sliding diagonals and for Warrior diagonal steps.
+     ========================= */
+  function diagonalCornerBlocked(board, cx, cy, dx, dy){
+    if (dx===0 || dy===0) return false;
+    const aX = cx + dx, aY = cy;
+    const bX = cx,     bY = cy + dy;
+    if (!inBounds(aX,aY) || !inBounds(bX,bY)) return false;
+    return (board[aY][aX] !== null) && (board[bY][bX] !== null);
+  }
+
+  /* ---------- Movement & legality ---------- */
+  function computeLegalMoves(s, piece){
+    const res = [];
+    const {x,y,rank} = piece;
+    const type = TYPE_BY_RANK[rank];
+    const b = s.board;
+
+    const add = (nx,ny)=>{
+      if (!inBounds(nx,ny)) return;
+      if (b[ny][nx] !== null) return;
+      res.push({x:nx,y:ny});
+    };
+
+    // Sliding with corner rule applied step-by-step for diagonal directions
+    const slide = (dx,dy,max)=>{
+      let cx = x, cy = y;
+      for (let step=1; step<=max; step++){
+        const nx = cx + dx, ny = cy + dy;
+        if (!inBounds(nx,ny)) break;
+
+        if (dx!==0 && dy!==0){
+          if (diagonalCornerBlocked(b, cx, cy, dx, dy)) break;
+        }
+
+        if (b[ny][nx] !== null) break;
+        res.push({x:nx,y:ny});
+        cx = nx; cy = ny;
+      }
+    };
+
+    if (type==="NOVIK"){
+      const f = piece.facing;
+      add(x, y+f);
+      add(x-1,y);
+      add(x+1,y);
+    } else if (type==="WARRIOR"){
+      const f = piece.facing;
+
+      // For each of 3 forward-ish directions:
+      // Step 1 allowed if empty and diagonal-corner rule passes for diagonal.
+      // Step 2 allowed if step1 empty and step2 empty and diagonal-corner rule passes from intermediate square too.
+      const dirs = [[0,f],[1,f],[-1,f]];
+      for (const [dx,dy] of dirs){
+        const nx1=x+dx, ny1=y+dy;
+        if (!inBounds(nx1,ny1)) continue;
+        if (dx!==0 && dy!==0 && diagonalCornerBlocked(b, x, y, dx, dy)) continue;
+        if (b[ny1][nx1]!==null) continue;
+
+        res.push({x:nx1,y:ny1});
+
+        const nx2=x+dx*2, ny2=y+dy*2;
+        if (!inBounds(nx2,ny2)) continue;
+
+        // Check corner rule from step1 square to step2 if diagonal
+        if (dx!==0 && dy!==0 && diagonalCornerBlocked(b, nx1, ny1, dx, dy)) continue;
+
+        if (b[ny2][nx2]===null){
+          res.push({x:nx2,y:ny2});
+        }
+      }
+    } else if (type==="REGENT"){
+      for (const [dx,dy] of dir8) slide(dx,dy,3);
+    } else if (type==="LORD"){
+      for (const [dx,dy] of dir8) slide(dx,dy,2);
+    } else if (type==="EMPEROR"){
+      for (const [dx,dy] of dir8) slide(dx,dy,2);
+    }
+    return res;
+  }
+
+  function novikMoveCountIfPlaced(s, owner, x, y){
+    const f = (owner==="WHITE" ? +1 : -1);
+    let c=0;
+    const checks = [[x,y+f],[x-1,y],[x+1,y]];
+    for (const [nx,ny] of checks){
+      if (!inBounds(nx,ny)) continue;
+      if (s.board[ny][nx] !== null) continue;
+      c++;
+    }
+    return c;
+  }
+
+  /* ---------- Mass (⚖) ---------- */
+  function recomputeMass(s){
+    for (const p of Object.values(s.pieces)) p.inMass = false;
+
+    for (const side of SIDES){
+      const isNovikAt = (x,y)=>{
+        if (!inBounds(x,y)) return false;
+        const id = s.board[y][x];
+        if (!id) return false;
+        const p = s.pieces[id];
+        return p && p.owner===side && p.rank===1;
+      };
+
+      for (let y=0; y<SIZE; y++){
+        for (let x=0; x<SIZE; x++){
+          if (!isNovikAt(x,y)) continue;
+          for (const [dx,dy] of dir4Lines){
+            const px = x-dx, py=y-dy;
+            if (isNovikAt(px,py)) continue;
+
+            const coords=[];
+            let cx=x, cy=y;
+            while (isNovikAt(cx,cy)){
+              coords.push([cx,cy]);
+              cx += dx; cy += dy;
+            }
+
+            if (coords.length>=3){
+              for (const [rx,ry] of coords){
+                const id = s.board[ry][rx];
+                if (id) s.pieces[id].inMass = true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    s.massDirty = false;
+    s.protDirty = true;
+  }
+
+  /* ---------- Lord protection (🛡) ---------- */
+  function isAdjacent(a,b){
+    return Math.abs(a.x-b.x)<=1 && Math.abs(a.y-b.y)<=1 && !(a.x===b.x && a.y===b.y);
+  }
+
+  function isEligibleForProtection(piece){
+    if (!piece) return false;
+    if (piece.rank >= 4) return false;
+    if (piece.rank === 5) return false;
+    if (piece.rank === 1 && piece.inMass) return false;
+    return true;
+  }
+
+  function recomputeProtection(s){
+    for (const p of Object.values(s.pieces)) p.protectors = [];
+
+    for (const lordId of Object.keys(s.lordLinks)){
+      const lord = s.pieces[lordId];
+      if (!lord || lord.rank!==4){ delete s.lordLinks[lordId]; continue; }
+
+      const links = s.lordLinks[lordId] || [];
+      const cleaned = [];
+
+      for (const tid of links){
+        const t = s.pieces[tid];
+        if (!t) continue;
+        if (t.owner !== lord.owner) continue;
+        if (!isAdjacent(lord,t)) continue;
+        if (!isEligibleForProtection(t)) continue;
+        cleaned.push(tid);
+        if (cleaned.length>=2) break;
+      }
+
+      s.lordLinks[lordId] = cleaned;
+
+      for (const tid of cleaned){
+        const t = s.pieces[tid];
+        if (t) t.protectors.push(lordId);
+      }
+    }
+
+    s.protDirty = false;
+  }
+
+  function ensureDerived(s){
+    if (s.massDirty) recomputeMass(s);
+    if (s.protDirty) recomputeProtection(s);
+  }
+
+  function isProtected(p){
+    return p && p.protectors && p.protectors.length>0;
+  }
+
+  function autoAssignLord(s, lordId){
+    const lord = s.pieces[lordId];
+    if (!lord || lord.rank!==4) return;
+    s.lordLinks[lordId] = s.lordLinks[lordId] || [];
+    if (s.lordLinks[lordId].length) return;
+
+    ensureDerived(s);
+
+    const candidates = [];
+    for (const p of Object.values(s.pieces)){
+      if (p.owner !== lord.owner) continue;
+      if (p.id === lord.id) continue;
+      if (!isAdjacent(lord,p)) continue;
+      if (!isEligibleForProtection(p)) continue;
+
+      const moves = computeLegalMoves(s,p).length;
+      const stuck = moves===0;
+      const already = isProtected(p);
+
+      let score = 0;
+      if (stuck && !already) score += 1000;
+      score += p.rank*100;
+      score += (10 - Math.min(10,moves))*6;
+      if (already) score -= 50;
+
+      candidates.push({id:p.id, score});
+    }
+
+    candidates.sort((a,b)=>b.score-a.score);
+    s.lordLinks[lordId] = candidates.slice(0,2).map(c=>c.id);
+    s.protDirty = true;
+    ensureDerived(s);
+  }
+
+  /* ---------- Subjugation ---------- */
+  function canBeSubjugated(victim, attackerRank){
+    if (!victim) return false;
+    if (isProtected(victim)) return false;
+    if (victim.rank===1 && victim.inMass && attackerRank < 3) return false;
+    return true;
+  }
+
+  function resolveSubjugations(s, attackerSide, attackerRank){
+    ensureDerived(s);
+
+    const defender = otherSide(attackerSide);
+    const victims = [];
+
+    for (const p of Object.values(s.pieces)){
+      if (p.owner !== defender) continue;
+      const moves = computeLegalMoves(s,p).length;
+      if (moves===0 && canBeSubjugated(p, attackerRank)){
+        victims.push(p.id);
+      }
+    }
+
+    if (!victims.length) return {victims:[]};
+
+    for (const vid of victims){
+      const v = s.pieces[vid];
+      if (!v) continue;
+
+      // Stats: count who subjugated / who lost
+      if (s.stats){
+        if (attackerSide === "WHITE") s.stats.whiteSubjugated++;
+        else s.stats.blackSubjugated++;
+
+        if (v.owner === "WHITE") s.stats.whiteLost++;
+        else s.stats.blackLost++;
+      }
+
+      const gain = v.rank;
+      removePiece(s, vid);
+      s.seals[attackerSide] += gain;
+
+      if (v.rank === 5){
+        s.winner = attackerSide;
+        s.phase = "END";
+        if (s.stats) statsOnGameEnd(s, "subjugation");
+      }
+    }
+
+    return {victims};
+  }
+
+  /* ---------- Anti self-mate ---------- */
+  function emperorMobility(s, side){
+    ensureDerived(s);
+    const emp = getEmperor(s, side);
+    if (!emp) return 0;
+    return computeLegalMoves(s, emp).length;
+  }
+
+  function wouldSelfMateAfter(stateAfter, side){
+    return emperorMobility(stateAfter, side) === 0;
+  }
+
+  /* ---------- Actions ---------- */
+  function hasNonEmperorPiece(s, side){
+    for (const p of Object.values(s.pieces)){
+      if (p.owner===side && p.rank!==5) return true;
+    }
+    return false;
+  }
+
+  function canStartPlay(s){
+    return hasNonEmperorPiece(s,"WHITE") && hasNonEmperorPiece(s,"BLACK");
+  }
+
+  function applyAction(s, action){
+    if (s.phase==="END") return {ok:false, reason:"game ended"};
+
+    const side = s.turn;
+
+    // Shield toggles are "free" and do not affect stats / turn flow
+    if (action.kind === "SHIELD_TOGGLE"){
+      const lord = s.pieces[action.lordId];
+      const target = s.pieces[action.targetId];
+      if (!lord || lord.rank!==4) return {ok:false, reason:"not lord"};
+      if (!target) return {ok:false, reason:"no target"};
+      if (lord.owner !== side || target.owner !== side) return {ok:false, reason:"not yours"};
+      ensureDerived(s);
+      if (!isAdjacent(lord,target)) return {ok:false, reason:"not adjacent"};
+      if (!isEligibleForProtection(target)) return {ok:false, reason:"not eligible"};
+
+      s.lordLinks[lord.id] = s.lordLinks[lord.id] || [];
+      const links = s.lordLinks[lord.id];
+
+      const idx = links.indexOf(target.id);
+      if (idx >= 0){
+        links.splice(idx,1);
+      } else {
+        if (links.length >= 2) links.shift();
+        links.push(target.id);
+      }
+
+      s.protDirty = true;
+      ensureDerived(s);
+      s.lastActionWasPass = false;
+      return {ok:true};
+    }
+
+    if (action.kind === "PASS"){
+      if (s.phase !== "SETUP") return {ok:false, reason:"not setup"};
+      if (s.setup.actionsSincePass <= 0) return {ok:false, reason:"need_action"};
+
+      // Stats: treat pass as not a move (no stats increment)
+      s.turn = otherSide(s.turn);
+      s.setup.actionsSincePass = 0;
+      s.lastActionWasPass = true;
+      return {ok:true};
+    }
+
+    if (action.kind === "START_PLAY"){
+      if (s.phase !== "SETUP") return {ok:false, reason:"not setup"};
+      if (!canStartPlay(s)) return {ok:false, reason:"cant_start_play"};
+      s.phase = "PLAY";
+      s.lastActionWasPass = false;
+      return {ok:true};
+    }
+
+    if (action.kind === "RESIGN"){
+      // Current side resigns
+      s.winner = otherSide(s.turn);
+      s.phase = "END";
+      if (s.stats){
+        statsOnGameEnd(s, "resign");
+      }
+      return {ok:true};
+    }
+
+    if (action.kind === "PLACE"){
+      if (s.seals[side] < 1) return {ok:false, reason:"no seals"};
+      const {x,y} = action;
+      if (!inBounds(x,y)) return {ok:false, reason:"oob"};
+      if (s.board[y][x] !== null) return {ok:false, reason:"occupied"};
+
+      const [minR,maxR] = HALF_ROWS[side];
+      if (y < minR || y > maxR) return {ok:false, reason:"not your half"};
+      if (novikMoveCountIfPlaced(s, side, x, y) < 2) return {ok:false, reason:"novik needs 2 moves"};
+
+      const sim = deepClone(s);
+      createPiece(sim, side, 1, x, y, (side==="WHITE"?+1:-1));
+      sim.seals[side] -= 1;
+      sim.massDirty = true; sim.protDirty = true;
+      resolveSubjugations(sim, side, 1);
+
+      if (wouldSelfMateAfter(sim, side)){
+        return {ok:false, reason:"selfmate"};
+      }
+
+      // Apply to real state
+      createPiece(s, side, 1, x, y, (side==="WHITE"?+1:-1));
+      s.seals[side] -= 1;
+      s.massDirty = true; s.protDirty = true;
+      const sub = resolveSubjugations(s, side, 1);
+
+      // Stats: this is a move/action
+      if (s.stats){
+        s.stats.moves++;
+        statsOnAction(s);
+      }
+
+      s.setup.actionsSincePass += (s.phase==="SETUP") ? 1 : 0;
+      s.lastActionWasPass = false;
+
+      if (s.phase==="PLAY" && s.phase!=="END") s.turn = otherSide(s.turn);
+
+      return {ok:true, subjugated: sub.victims, placed:true};
+    }
+
+    if (action.kind === "UPGRADE"){
+      const p = s.pieces[action.id];
+      if (!p) return {ok:false, reason:"no piece"};
+      if (p.owner !== side) return {ok:false, reason:"not yours"};
+      if (p.rank === 5) return {ok:false, reason:"emperor cannot"};
+      if (p.rank >= 4) return {ok:false, reason:"max rank"};
+      if (s.seals[side] < 1) return {ok:false, reason:"no seals"};
+
+      const sim = deepClone(s);
+      sim.seals[side] -= 1;
+      sim.pieces[action.id].rank += 1;
+      if (sim.pieces[action.id].rank === 4){
+        sim.lordLinks[action.id] = sim.lordLinks[action.id] || [];
+        autoAssignLord(sim, action.id);
+      }
+      sim.massDirty = true; sim.protDirty = true;
+      resolveSubjugations(sim, side, sim.pieces[action.id].rank);
+
+      if (wouldSelfMateAfter(sim, side)){
+        return {ok:false, reason:"selfmate"};
+      }
+
+      // Apply real
+      s.seals[side] -= 1;
+      p.rank += 1;
+      if (p.rank === 4){
+        s.lordLinks[p.id] = s.lordLinks[p.id] || [];
+        autoAssignLord(s, p.id);
+      }
+      s.massDirty = true; s.protDirty = true;
+      const sub = resolveSubjugations(s, side, p.rank);
+
+      if (s.stats){
+        s.stats.moves++;
+        statsOnAction(s);
+      }
+
+      s.setup.actionsSincePass += (s.phase==="SETUP") ? 1 : 0;
+      s.lastActionWasPass = false;
+
+      if (s.phase==="PLAY" && s.phase!=="END") s.turn = otherSide(s.turn);
+
+      return {ok:true, subjugated: sub.victims, upgradedId: p.id};
+    }
+
+    if (action.kind === "MOVE"){
+      if (s.phase !== "PLAY") return {ok:false, reason:"not play"};
+      const p = s.pieces[action.id];
+      if (!p) return {ok:false, reason:"no piece"};
+      if (p.owner !== side) return {ok:false, reason:"not yours"};
+      const {toX,toY} = action;
+      if (!inBounds(toX,toY)) return {ok:false, reason:"oob"};
+      if (s.board[toY][toX] !== null) return {ok:false, reason:"occupied"};
+
+      const legal = computeLegalMoves(s,p);
+      if (!legal.some(m=>m.x===toX && m.y===toY)) return {ok:false, reason:"illegal"};
+
+      const sim = deepClone(s);
+      const sp = sim.pieces[action.id];
+      sim.board[sp.y][sp.x] = null;
+      sp.x=toX; sp.y=toY;
+      sim.board[toY][toX] = sp.id;
+      maybeFlipFacingAtEdge(sp);
+      sim.massDirty = true; sim.protDirty = true;
+      resolveSubjugations(sim, side, sp.rank);
+
+      if (wouldSelfMateAfter(sim, side)){
+        return {ok:false, reason:"selfmate"};
+      }
+
+      s.board[p.y][p.x] = null;
+      p.x=toX; p.y=toY;
+      s.board[toY][toX] = p.id;
+      maybeFlipFacingAtEdge(p);
+
+      s.massDirty = true; s.protDirty = true;
+      const sub = resolveSubjugations(s, side, p.rank);
+
+      if (s.stats){
+        s.stats.moves++;
+        statsOnAction(s);
+      }
+
+      s.lastActionWasPass = false;
+      if (s.phase!=="END") s.turn = otherSide(s.turn);
+
+      return {ok:true, subjugated: sub.victims, movedId: p.id};
+    }
+
+    return {ok:false, reason:"unknown"};
+  }
+
+  /* ---------- History (Undo) ---------- */
+  const history = [];
+  function pushHistory(snapshot, meta={}){
+    history.push({ snapshot, meta });
+    if (history.length > 140) history.shift();
+  }
+  function canUndo(){
+    if (!history.length) return false;
+    const last = history[history.length-1];
+    if (last.meta && last.meta.blockUndo) return false;
+    return true;
+  }
+
+  /* ---------- UI state ---------- */
+  let state = newState();
+  let flipped = false;
+  let botsEnabled = true;
+
+  const selection = {
+    pieceId: null,
+    clear(){ this.pieceId=null; }
+  };
+
+  const mode = {
+    value: "MOVE",
+    set(v){
+      this.value = v;
+      updateModeButtons();
+      renderHighlights();
+      renderHints();
+    }
+  };
+
+  function getSideController(side){
+    return (side==="WHITE" ? ui.whiteCtrl.value : ui.blackCtrl.value);
+  }
+  function isBot(side){
+    return getSideController(side) !== "HUMAN";
+  }
+
+  /* ============================================================
+     BOT IMPROVEMENTS
+     - Hard now uses time-budgeted iterative deepening (depth 2->4)
+     - Normal uses 2-ply minimax
+     - Reduced Novik spam penalty
+     - Less emperor panic
+     ============================================================ */
+
+  function randInt(a,b){ return a + ((Math.random()*(b-a+1))|0); }
+
+  function getOrCreateBotPlan(side){
+    if (state.setup.botPlan[side]) return state.setup.botPlan[side];
+
+    const diff = getSideController(side);
+    let spendTarget = 0;
+    if (diff==="NORMAL") spendTarget = randInt(10,20);
+    else if (diff==="HARD") spendTarget = randInt(12,20);
+    else if (diff==="EASY") spendTarget = randInt(6,14);
+    else spendTarget = 0;
+
+    state.setup.botPlan[side] = {
+      spendTarget,
+      minUpgradedPieces: (diff==="HARD" || diff==="NORMAL") ? 2 : 0,
+      requireRegentOrLord: (diff==="HARD" || diff==="NORMAL") ? 1 : 0
+    };
+    return state.setup.botPlan[side];
+  }
+
+  function resetBotPlans(){
+    state.setup.botPlan.WHITE = null;
+    state.setup.botPlan.BLACK = null;
+  }
+
+  function spentSeals(s, side){ return 25 - s.seals[side]; } // start is 25 now
+
+  function countNonEmperor(s, side){
+    let c=0;
+    for (const p of Object.values(s.pieces)){
+      if (p.owner===side && p.rank!==5) c++;
+    }
+    return c;
+  }
+  function countUpgradedPieces(s, side){
+    let c=0;
+    for (const p of Object.values(s.pieces)){
+      if (p.owner!==side) continue;
+      if (p.rank===5) continue;
+      if (p.rank>1) c++;
+    }
+    return c;
+  }
+  function hasRegentOrLord(s, side){
+    for (const p of Object.values(s.pieces)){
+      if (p.owner===side && (p.rank===3 || p.rank===4)) return true;
+    }
+    return false;
+  }
+  function maxRankOfSide(s, side){
+    let mr = 1;
+    for (const p of Object.values(s.pieces)){
+      if (p.owner===side) mr = Math.max(mr, p.rank);
+    }
+    return mr;
+  }
+
+  function mobilitySum(s, side){
+    let sum = 0;
+    for (const p of Object.values(s.pieces)){
+      if (p.owner!==side) continue;
+      if (p.rank===5) continue;
+      sum += computeLegalMoves(s,p).length;
+    }
+    return sum;
+  }
+
+  function countSubjugatableStuck(s, victimSide, attackerSide){
+    ensureDerived(s);
+    const attackerRank = maxRankOfSide(s, attackerSide);
+    let c = 0;
+    for (const p of Object.values(s.pieces)){
+      if (p.owner!==victimSide) continue;
+      const mv = computeLegalMoves(s,p).length;
+      if (mv!==0) continue;
+      if (canBeSubjugated(p, attackerRank)) c++;
+    }
+    return c;
+  }
+
+  function evalStateForBot(s, perspective){
+    ensureDerived(s);
+    const opp = otherSide(perspective);
+
+    if (s.winner===perspective) return 1e9;
+    if (s.winner===opp) return -1e9;
+
+    const sealsP = s.seals[perspective];
+    const sealsO = s.seals[opp];
+    const sealsDiff = sealsP - sealsO;
+
+    const empP = getEmperor(s, perspective);
+    const empO = getEmperor(s, opp);
+    const empMobP = empP ? computeLegalMoves(s, empP).length : 0;
+    const empMobO = empO ? computeLegalMoves(s, empO).length : 0;
+
+    let devP=0, devO=0, countP=0, countO=0, protP=0, protO=0;
+    let r3P=0,r3O=0,r4P=0,r4O=0, novP=0,novO=0;
+
+    for (const p of Object.values(s.pieces)){
+      if (p.rank!==5){
+        if (p.owner===perspective){
+          devP += p.rank; countP++;
+          if (p.rank===3) r3P++;
+          if (p.rank===4) r4P++;
+          if (p.rank===1) novP++;
+        } else {
+          devO += p.rank; countO++;
+          if (p.rank===3) r3O++;
+          if (p.rank===4) r4O++;
+          if (p.rank===1) novO++;
+        }
+      }
+      if (isProtected(p)){
+        if (p.owner===perspective) protP++;
+        else protO++;
+      }
+    }
+
+    const mobP = mobilitySum(s, perspective);
+    const mobO = mobilitySum(s, opp);
+
+    const stuckVictimsO = countSubjugatableStuck(s, opp, perspective);
+    const stuckVictimsP = countSubjugatableStuck(s, perspective, opp);
+
+    // Smaller hoarding threshold because start seals increased to 25
+    const hoardP = Math.max(0, sealsP - 18);
+    const hoardO = Math.max(0, sealsO - 18);
+
+    let score = 0;
+
+    score += sealsDiff * 65;
+    score -= hoardP * 28;
+    score += hoardO * 16;
+
+    score += (devP-devO) * 34;
+    score += (countP-countO) * 7;
+
+    score += (r3P-r3O) * 170;
+    score += (r4P-r4O) * 270;
+
+    score += (protP-protO) * 14;
+    score += (mobP-mobO) * 3;
+
+    // ✅ Reduced Novik spam penalty (as requested)
+    if (novP > 7) score -= (novP-7) * 6;
+    if (novP > 9) score -= (novP-9) * 12;
+    if (novO > 7) score += (novO-7) * 4;
+    if (novO > 9) score += (novO-9) * 8;
+
+    // Emperor: strong fear only at 0 moves. 1–2 is mild.
+    if (empMobP===0) score -= 800000;
+    if (empMobP===1) score -= 330;
+    if (empMobP===2) score -= 90;
+
+    if (empMobO<=2) score += 280;
+    if (empMobO===1) score += 700;
+
+    score += stuckVictimsO * 240;
+    score -= stuckVictimsP * 270;
+
+    score += (s.turn===perspective) ? 22 : -22;
+
+    return score;
+  }
+
+  function genAllActionsForSide(s, side){
+    const acts = [];
+    const seals = s.seals[side];
+
+    if (seals >= 1){
+      const [minR,maxR] = HALF_ROWS[side];
+      for (let y=minR; y<=maxR; y++){
+        for (let x=0; x<SIZE; x++){
+          if (s.board[y][x] !== null) continue;
+          if (novikMoveCountIfPlaced(s, side, x, y) < 2) continue;
+          acts.push({kind:"PLACE", x, y});
+        }
+      }
+    }
+
+    if (seals >= 1){
+      for (const p of Object.values(s.pieces)){
+        if (p.owner!==side) continue;
+        if (p.rank===5) continue;
+        if (p.rank>=4) continue;
+        acts.push({kind:"UPGRADE", id:p.id});
+      }
+    }
+
+    if (s.phase==="PLAY"){
+      for (const p of Object.values(s.pieces)){
+        if (p.owner!==side) continue;
+        const moves = computeLegalMoves(s,p);
+        for (const m of moves){
+          acts.push({kind:"MOVE", id:p.id, toX:m.x, toY:m.y});
+        }
+      }
+    }
+
+    return acts;
+  }
+
+  function actionHeuristic(s, side, act){
+    const opp = otherSide(side);
+    const empO = getEmperor(s, opp);
+    const empP = getEmperor(s, side);
+
+    if (act.kind==="UPGRADE"){
+      const p = s.pieces[act.id];
+      if (!p) return 0;
+      const newRank = p.rank + 1;
+      let h = 800;
+      if (newRank===3) h += 600;
+      if (newRank===4) h += 850;
+      h += newRank * 40;
+      if (p.rank===1) h -= 25;
+      if (empP && computeLegalMoves(s, empP).length<=2) h += 40;
+      return h;
+    }
+
+    if (act.kind==="MOVE"){
+      const p = s.pieces[act.id];
+      if (!p) return 0;
+
+      if (p.rank===5) {
+        const mob = computeLegalMoves(s,p).length;
+        return (mob<=1) ? 650 : 40;
+      }
+
+      let h = 260 + p.rank*25;
+
+      if (empO){
+        const d0 = manhattan(p.x,p.y, empO.x, empO.y);
+        const d1 = manhattan(act.toX,act.toY, empO.x, empO.y);
+        if (d1 < d0) h += (d0-d1) * 90;
+      }
+      if (p.rank>=3) h += 120;
+      return h;
+    }
+
+    if (act.kind==="PLACE"){
+      let h = 180;
+      if (side==="WHITE"){
+        h += (act.y===3 ? 80 : act.y===2 ? 40 : 0);
+      } else {
+        h += (act.y===5 ? 80 : act.y===6 ? 40 : 0);
+      }
+      h += (4 - Math.min(4, Math.abs(act.x-4))) * 10;
+      return h;
+    }
+
+    return 0;
+  }
+
+  function sortActionsByHeuristic(s, side, actions){
+    return actions
+      .map(a=>({a, h: actionHeuristic(s, side, a)}))
+      .sort((x,y)=> y.h - x.h)
+      .map(x=>x.a);
+  }
+
+  function scoreAction1Ply(s, side, act){
+    const opp = otherSide(side);
+    const empO0 = emperorMobility(s, opp);
+    const empP0 = emperorMobility(s, side);
+    const oppCount0 = countNonEmperor(s, opp);
+
+    const sim = deepClone(s);
+    const r = applyAction(sim, act);
+    if (!r.ok) return -Infinity;
+
+    const base = evalStateForBot(sim, side);
+
+    let bonus = 0;
+    const oppCount1 = countNonEmperor(sim, opp);
+    const removed = Math.max(0, oppCount0 - oppCount1);
+    if (removed>0) bonus += removed * 260;
+
+    const empO1 = emperorMobility(sim, opp);
+    const deltaO = empO0 - empO1;
+    if (deltaO>0) bonus += deltaO * 260;
+
+    if (act.kind==="MOVE"){
+      const p = s.pieces[act.id];
+      if (p && p.rank===5){
+        if (empP0>=2) bonus -= 180;
+      }
+    }
+
+    if (act.kind==="UPGRADE"){
+      const p = s.pieces[act.id];
+      if (p){
+        const newRank = p.rank + 1;
+        if (newRank===3) bonus += 260;
+        if (newRank===4) bonus += 360;
+      }
+    }
+
+    return base + bonus;
+  }
+
+  function chooseGreedy(s, side, candidates){
+    let best = null, bestSc = -Infinity;
+    for (const a of candidates){
+      const sc = scoreAction1Ply(s, side, a);
+      if (sc > bestSc){
+        bestSc = sc;
+        best = a;
+      }
+    }
+    return best;
+  }
+
+  function tacticalPosition(s, perspective){
+    const opp = otherSide(perspective);
+    const t1 = countSubjugatableStuck(s, opp, perspective);
+    const t2 = countSubjugatableStuck(s, perspective, opp);
+    if (t1>0 || t2>0) return true;
+
+    const empO = emperorMobility(s, opp);
+    if (empO<=2) return true;
+    return false;
+  }
+
+  function bestReplyGreedy(s, side, cap){
+    const acts = sortActionsByHeuristic(s, side, genAllActionsForSide(s, side));
+    const limited = acts.slice(0, cap);
+    return chooseGreedy(s, side, limited);
+  }
+
+  function choose2PlyMinimax(s, side, caps){
+    const opp = otherSide(side);
+    const candidates = sortActionsByHeuristic(s, side, genAllActionsForSide(s, side)).slice(0, caps.my);
+
+    let best = null, bestVal = -Infinity;
+
+    for (const a of candidates){
+      const s1 = deepClone(s);
+      const r1 = applyAction(s1, a);
+      if (!r1.ok) continue;
+
+      if (s1.phase==="END"){
+        const v = evalStateForBot(s1, side);
+        if (v > bestVal){ bestVal=v; best=a; }
+        continue;
+      }
+
+      const oppMoves = sortActionsByHeuristic(s1, opp, genAllActionsForSide(s1, opp)).slice(0, caps.opp);
+
+      let worst = Infinity;
+      if (!oppMoves.length){
+        worst = evalStateForBot(s1, side);
+      } else {
+        for (const b of oppMoves){
+          const s2 = deepClone(s1);
+          const r2 = applyAction(s2, b);
+          if (!r2.ok) continue;
+          const v = evalStateForBot(s2, side);
+          if (v < worst) worst = v;
+        }
+      }
+
+      if (worst > bestVal){
+        bestVal = worst;
+        best = a;
+      }
+    }
+
+    return best;
+  }
+
+  /* =========================
+     Hard: time-budgeted iterative deepening
+     - depth 2..4 (depending on board)
+     - alpha-beta negamax
+     - uses ordering and node caps
+     - stops when time runs out
+     ========================= */
+  function chooseHardTimed(s, side){
+    const start = performance.now();
+
+    // More thinking time as requested
+    const TIME_MS = 420;
+
+    // Deeper in smaller positions
+    const pieceCount = Object.keys(s.pieces).length;
+    const maxDepth = (pieceCount <= 12) ? 4 : 3;
+
+    // Branch caps per depth to avoid freezes
+    const ROOT_CAP = 120;
+    const NODE_CAP = (maxDepth===4 ? 42 : 55);
+
+    const opp = otherSide(side);
+
+    function timeUp(){ return (performance.now() - start) > TIME_MS; }
+
+    function orderedActs(state, who, cap){
+      const all = genAllActionsForSide(state, who);
+      const ord = sortActionsByHeuristic(state, who, all);
+      return ord.slice(0, cap);
+    }
+
+    // Quiescence: if tactical at leaf, allow one extra greedy reply
+    function quiescence(state, who){
+      if (!tacticalPosition(state, who)) return evalStateForBot(state, side);
+      const reply = bestReplyGreedy(state, who, 26);
+      if (!reply) return evalStateForBot(state, side);
+      const s2 = deepClone(state);
+      const r = applyAction(s2, reply);
+      if (!r.ok) return evalStateForBot(state, side);
+      return evalStateForBot(s2, side);
+    }
+
+    function negamax(state, who, depth, alpha, beta){
+      if (timeUp()) return quiescence(state, who);
+      if (state.phase==="END") return evalStateForBot(state, side);
+      if (depth<=0) return quiescence(state, who);
+
+      const acts = orderedActs(state, who, NODE_CAP);
+      if (!acts.length) return evalStateForBot(state, side);
+
+      let best = -Infinity;
+
+      for (let i=0; i<acts.length; i++){
+        if ((i & 7)===0 && timeUp()) break;
+
+        const a = acts[i];
+        const s1 = deepClone(state);
+        const r = applyAction(s1, a);
+        if (!r.ok) continue;
+
+        // opponent turn after action is encoded in applyAction (PLAY moves toggle turn)
+        const nextWho = s1.turn;
+
+        const val = -negamax(s1, nextWho, depth-1, -beta, -alpha);
+        if (val > best) best = val;
+        if (best > alpha) alpha = best;
+        if (alpha >= beta) break;
+      }
+
+      return best;
+    }
+
+    // Root search with iterative deepening
+    const rootActs = orderedActs(s, side, ROOT_CAP);
+    if (!rootActs.length) return null;
+
+    let bestAction = rootActs[0];
+    let bestScore = -Infinity;
+
+    for (let depth=2; depth<=maxDepth; depth++){
+      if (timeUp()) break;
+
+      let localBestA = bestAction;
+      let localBestS = -Infinity;
+      let alpha = -Infinity, beta = Infinity;
+
+      for (let i=0; i<rootActs.length; i++){
+        if ((i & 5)===0 && timeUp()) break;
+
+        const a = rootActs[i];
+        const s1 = deepClone(s);
+        const r = applyAction(s1, a);
+        if (!r.ok) continue;
+
+        const nextWho = s1.turn;
+        const val = -negamax(s1, nextWho, depth-1, -beta, -alpha);
+
+        if (val > localBestS){
+          localBestS = val;
+          localBestA = a;
+        }
+        if (val > alpha) alpha = val;
+      }
+
+      // commit depth result if we had time
+      bestAction = localBestA;
+      bestScore = localBestS;
+    }
+
+    return bestAction;
+  }
+
+  function botPickAction(s, side, diff){
+    const all = genAllActionsForSide(s, side);
+    if (!all.length) return null;
+
+    const ordered = sortActionsByHeuristic(s, side, all);
+
+    if (diff==="HARD"){
+      if (s.phase==="PLAY"){
+        return chooseHardTimed(s, side);
+      }
+      return chooseGreedy(s, side, ordered.slice(0, 70));
+    }
+
+    if (diff==="NORMAL"){
+      if (s.phase==="PLAY"){
+        return choose2PlyMinimax(s, side, {my: 62, opp: 40});
+      }
+      return chooseGreedy(s, side, ordered.slice(0, 70));
+    }
+
+    // EASY: random among top few good
+    const scored = ordered
+      .map(a=>({a, sc: scoreAction1Ply(s, side, a)}))
+      .filter(x=>Number.isFinite(x.sc))
+      .sort((x,y)=>y.sc-x.sc);
+    const top = scored.slice(0, Math.min(8, scored.length));
+    if (!top.length) return null;
+    return top[(Math.random()*top.length)|0].a;
+  }
+
+  function botSetupShouldContinue(side){
+    const diff = getSideController(side);
+    if (diff==="HUMAN") return false;
+
+    const plan = getOrCreateBotPlan(side);
+
+    const spent = spentSeals(state, side);
+    const upPieces = countUpgradedPieces(state, side);
+    const hasBig = hasRegentOrLord(state, side);
+
+    if (state.seals[side] <= 0) return false;
+
+    if (spent < plan.spendTarget) return true;
+    if (upPieces < plan.minUpgradedPieces) return true;
+    if (plan.requireRegentOrLord && !hasBig) return true;
+
+    return false;
+  }
+
+  function forcedSetupPreference(side){
+    const plan = getOrCreateBotPlan(side);
+    const upPieces = countUpgradedPieces(state, side);
+    const hasBig = hasRegentOrLord(state, side);
+
+    if (plan.requireRegentOrLord && !hasBig) return "NEED_BIG";
+    if (upPieces < plan.minUpgradedPieces) return "NEED_UPGRADES";
+    return "NONE";
+  }
+
+  function chooseForcedUpgradeToBig(stateLike, side){
+    const actions = genAllActionsForSide(stateLike, side).filter(a=>a.kind==="UPGRADE");
+    if (!actions.length) return null;
+
+    const ordered = actions
+      .map(a=>{
+        const p = stateLike.pieces[a.id];
+        const newRank = p ? p.rank+1 : 0;
+        let w = 0;
+        if (newRank===4) w += 2000;
+        if (newRank===3) w += 1500;
+        if (p && p.rank===2) w += 250;
+        w += scoreAction1Ply(stateLike, side, a);
+        return {a, w};
+      })
+      .sort((x,y)=>y.w-x.w);
+
+    return ordered[0]?.a || null;
+  }
+
+  /* ---------- Bot loops ---------- */
+  async function botDoSetupTurn(side){
+    const diff = getSideController(side);
+    setStatus(t().thinking, "warn");
+
+    const plan = getOrCreateBotPlan(side);
+    ui.sideHint.textContent =
+      `BOT SETUP (${side}, ${diff}): target spend ${plan.spendTarget}, upgraded≥${plan.minUpgradedPieces}, needs R3/R4=${plan.requireRegentOrLord? "yes":"no"}`;
+
+    let safety = 0;
+    while (state.phase==="SETUP" && state.turn===side && !state.winner){
+      safety++;
+      if (safety > 70) break;
+
+      if (!botSetupShouldContinue(side)) break;
+
+      const pref = forcedSetupPreference(side);
+      let act = null;
+
+      if (pref==="NEED_BIG"){
+        act = chooseForcedUpgradeToBig(state, side);
+      } else if (pref==="NEED_UPGRADES"){
+        const ups = sortActionsByHeuristic(state, side, genAllActionsForSide(state, side))
+          .filter(a=>a.kind==="UPGRADE")
+          .slice(0, 40);
+        act = chooseGreedy(state, side, ups);
+      }
+
+      if (!act){
+        act = botPickAction(state, side, diff);
+      }
+      if (!act) break;
+
+      pushHistory(deepClone(state), {blockUndo:false});
+      const r = applyAction(state, act);
+      if (!r.ok){
+        history.pop();
+        break;
+      }
+
+      renderAll();
+
+      if (safety % 4 === 0) await new Promise(r=>setTimeout(r, 0));
+    }
+
+    if (state.phase==="SETUP" && state.turn===side && state.setup.actionsSincePass >= 1 && !state.winner){
+      pushHistory(deepClone(state), {blockUndo:true});
+      applyAction(state, {kind:"PASS"});
+      renderAll();
+    }
+
+    setStatus(t().idle, "");
+  }
+
+  async function botDoPlayTurn(side){
+    const diff = getSideController(side);
+    setStatus(t().thinking, "warn");
+
+    await new Promise(r=>setTimeout(r, 70));
+
+    const act = botPickAction(state, side, diff);
+    if (!act){
+      state.winner = otherSide(side);
+      state.phase = "END";
+      if (state.stats) statsOnGameEnd(state, "subjugation");
+      renderAll();
+      setStatus(t().idle, "");
+      return;
+    }
+
+    pushHistory(deepClone(state), {blockUndo:false});
+    const r = applyAction(state, act);
+    if (!r.ok){
+      history.pop();
+      setStatus(t().idle, "");
+      return;
+    }
+
+    renderAll();
+    setStatus(t().idle, "");
+  }
+
+  let botLoopRunning = false;
+  async function scheduleBots(){
+    if (!botsEnabled) return;
+    if (botLoopRunning) return;
+    botLoopRunning = true;
+
+    try{
+      while (botsEnabled && state.phase!=="END"){
+        const side = state.turn;
+        if (!isBot(side)) break;
+        if (mode.value === "SHIELD") break;
+
+        if (state.phase === "SETUP") await botDoSetupTurn(side);
+        else if (state.phase === "PLAY") await botDoPlayTurn(side);
+        else break;
+
+        await new Promise(r=>setTimeout(r, 0));
+      }
+    } finally {
+      botLoopRunning = false;
+      setStatus(t().idle, "");
+    }
+  }
+
+  /* ---------- Rendering ---------- */
+  const cellEls = [];
+  const pieceElsById = new Map();
+
+  function buildBoardOnce(){
+    boardEl.innerHTML = "";
+    cellEls.length = 0;
+
+    for (let y=0; y<SIZE; y++){
+      for (let x=0; x<SIZE; x++){
+        const cell = document.createElement("div");
+        cell.className = "cell" + (((x+y)%2) ? " dark" : "");
+        cell.dataset.x = String(x);
+        cell.dataset.y = String(y);
+
+        const c = document.createElement("div");
+        c.className = "coord";
+        c.textContent = `${x},${y}`;
+        cell.appendChild(c);
+
+        boardEl.appendChild(cell);
+        cellEls.push(cell);
+      }
+    }
+  }
+
+  function cellIndex(x,y){ return y*SIZE + x; }
+  function getCellEl(x,y){ return cellEls[cellIndex(x,y)]; }
+
+  function ensurePieceEl(piece){
+    let el = pieceElsById.get(piece.id);
+    if (el) return el;
+
+    el = document.createElement("div");
+    el.className = `piece ${piece.owner==="WHITE" ? "white" : "black"} r${piece.rank}`;
+    el.dataset.pid = piece.id;
+
+    const inner = document.createElement("div");
+    inner.className = "inner";
+
+    const badge = document.createElement("div");
+    badge.className = "badge";
+    badge.textContent = `R${piece.rank}`;
+
+    const shape = document.createElement("div");
+    shape.className = "shape";
+
+    const glyph = document.createElement("div");
+    glyph.className = "glyph";
+    glyph.textContent = GLYPH_BY_RANK[piece.rank];
+    shape.appendChild(glyph);
+
+    const iconRow = document.createElement("div");
+    iconRow.className = "iconRow";
+
+    inner.appendChild(badge);
+    inner.appendChild(shape);
+    inner.appendChild(iconRow);
+    el.appendChild(inner);
+
+    pieceElsById.set(piece.id, el);
+    return el;
+  }
+
+  function pulseClass(el, cls, ms=240){
+    el.classList.add(cls);
+    setTimeout(()=>el.classList.remove(cls), ms);
+  }
+
+  function updatePieceEl(piece){
+    const el = ensurePieceEl(piece);
+
+    el.className = `piece ${piece.owner==="WHITE" ? "white" : "black"} r${piece.rank}` + (selection.pieceId===piece.id ? " selected" : "");
+
+    const badge = el.querySelector(".badge");
+    const glyph = el.querySelector(".glyph");
+    if (badge) badge.textContent = `R${piece.rank}`;
+    if (glyph) glyph.textContent = GLYPH_BY_RANK[piece.rank];
+
+    ensureDerived(state);
+    const iconRow = el.querySelector(".iconRow");
+    if (iconRow){
+      iconRow.innerHTML = "";
+      if (piece.rank===1 && piece.inMass){
+        const ic = document.createElement("div"); ic.className="ic mass"; ic.textContent="⚖";
+        iconRow.appendChild(ic);
+      }
+      if (isProtected(piece)){
+        const ic = document.createElement("div"); ic.className="ic shield"; ic.textContent="🛡";
+        iconRow.appendChild(ic);
+      }
+      const moves = computeLegalMoves(state, piece).length;
+      if (moves===0 && !isProtected(piece)){
+        const ic = document.createElement("div"); ic.className="ic stuck"; ic.textContent="⚠";
+        iconRow.appendChild(ic);
+      }
+    }
+
+    const cell = getCellEl(piece.x, piece.y);
+    if (cell && el.parentElement !== cell){
+      cell.appendChild(el);
+    }
+  }
+
+  function cleanupPieceEls(){
+    for (const [id, el] of pieceElsById.entries()){
+      if (!state.pieces[id]){
+        el.classList.add("captured");
+        setTimeout(()=> el.remove(), 260);
+        pieceElsById.delete(id);
+      }
+    }
+  }
+
+  function clearCellClasses(){
+    for (const cell of cellEls){
+      cell.classList.remove("hl","move");
+    }
+  }
+
+  function renderHighlights(){
+    clearCellClasses();
+    ensureDerived(state);
+
+    if (selection.pieceId && state.pieces[selection.pieceId]){
+      const p = state.pieces[selection.pieceId];
+      const cell = getCellEl(p.x,p.y);
+      if (cell) cell.classList.add("hl");
+
+      if (mode.value==="MOVE"){
+        const isMyTurn = state.turn === p.owner;
+        const ctrl = getSideController(state.turn);
+        const isHumanTurn = (ctrl === "HUMAN");
+        if (state.phase==="PLAY" && isMyTurn && isHumanTurn){
+          const moves = computeLegalMoves(state, p);
+          for (const m of moves){
+            const c2 = getCellEl(m.x,m.y);
+            if (c2) c2.classList.add("move");
+          }
+        }
+      }
+    }
+
+    if (mode.value==="PLACE"){
+      const side = state.turn;
+      const ctrl = getSideController(side);
+      if (ctrl === "HUMAN"){
+        const [minR,maxR] = HALF_ROWS[side];
+        for (let y=minR; y<=maxR; y++){
+          for (let x=0; x<SIZE; x++){
+            if (state.board[y][x]!==null) continue;
+            if (novikMoveCountIfPlaced(state, side, x, y) < 2) continue;
+            getCellEl(x,y).classList.add("move");
+          }
+        }
+      }
+    }
+
+    if (mode.value==="SHIELD" && selection.pieceId){
+      const lord = state.pieces[selection.pieceId];
+      if (lord && lord.rank===4 && lord.owner===state.turn){
+        for (const p of Object.values(state.pieces)){
+          if (p.owner !== lord.owner) continue;
+          if (p.id === lord.id) continue;
+          if (!isAdjacent(lord,p)) continue;
+          if (!isEligibleForProtection(p)) continue;
+          getCellEl(p.x,p.y).classList.add("move");
+        }
+      }
+    }
+  }
+
+  function t(){ return I18N[ui.lang.value]; }
+
+  function renderHints(){
+    const txt = t();
+    if (state.phase==="SETUP") ui.hintText.textContent = txt.setupHint;
+    else if (state.phase==="PLAY") ui.hintText.textContent = txt.playHint;
+    else ui.hintText.textContent = "";
+
+    if (mode.value==="PLACE") ui.sideHint.textContent = txt.placeMode;
+    else if (mode.value==="SHIELD") ui.sideHint.textContent = txt.shieldMode;
+    else ui.sideHint.textContent = txt.moveMode;
+  }
+
+  function setStatus(text, kind){
+    ui.statusTag.textContent = text;
+    ui.statusTag.className = "tag " + (kind || "");
+  }
+
+  function renderHeader(){
+    const txt = t();
+
+    ui.brandTitle.textContent = `AXE — ${VERSION}`;
+    ui.subTitle.textContent = txt.subTitle;
+    ui.hdrBoard.textContent = txt.board;
+    ui.hdrControl.textContent = txt.control;
+
+    ui.btnNew.textContent = txt.new;
+    ui.btnUndo.textContent = txt.undo;
+    ui.btnFlip.textContent = txt.flip;
+    ui.btnRules.textContent = txt.rules;
+
+    ui.lblWhite.textContent = txt.white;
+    ui.lblBlack.textContent = txt.black;
+
+    ui.lblSealsW.textContent = txt.sealsW;
+    ui.lblSealsB.textContent = txt.sealsB;
+
+    ui.btnPlace.textContent = txt.place;
+    ui.btnUpgrade.textContent = txt.upgrade;
+    ui.btnShield.textContent = txt.shield;
+    ui.btnPass.textContent = txt.pass;
+    ui.btnStartPlay.textContent = txt.startPlay;
+    ui.btnStopBots.textContent = txt.stopBots;
+    ui.btnResign.textContent = txt.resign;
+
+    ui.hdrStats.textContent = txt.stats;
+
+    ui.verTag.textContent = VERSION;
+
+    ui.phaseTag.textContent = (state.phase==="SETUP") ? txt.phaseSetup :
+                              (state.phase==="PLAY") ? txt.phasePlay : txt.phaseEnd;
+    ui.phaseTag.className = "tag " + (state.phase==="SETUP" ? "warn" : state.phase==="PLAY" ? "good" : "bad");
+
+    ui.turnTag.textContent = `${txt.turn}: ${state.turn}`;
+
+    ui.btnPass.disabled = !(state.phase==="SETUP" && state.setup.actionsSincePass>0 && state.phase!=="END");
+    ui.btnStartPlay.disabled = !(state.phase==="SETUP" && canStartPlay(state));
+    ui.btnUndo.disabled = !canUndo();
+    ui.btnResign.disabled = (state.phase==="END");
+
+    ui.btnSound.textContent = soundEnabled ? txt.soundOn : txt.soundOff;
+    ui.btnSound.className = soundEnabled ? "good" : "bad";
+
+    if (!botsEnabled) setStatus(txt.stopped, "bad");
+  }
+
+  function renderSeals(){
+    ui.sealsW.textContent = String(state.seals.WHITE);
+    ui.sealsB.textContent = String(state.seals.BLACK);
+  }
+
+  function renderStats(){
+    const st = state.stats;
+    if (!st) return;
+
+    const now = performance.now();
+    const end = st.endTime ?? now;
+    const dur = end - st.startTime;
+
+    ui.stMovesV.textContent = String(st.moves);
+    ui.stTimeV.textContent = fmtTime(dur);
+
+    ui.stWSubV.textContent = String(st.whiteSubjugated);
+    ui.stBSubV.textContent = String(st.blackSubjugated);
+    ui.stWLostV.textContent = String(st.whiteLost);
+    ui.stBLostV.textContent = String(st.blackLost);
+
+    if (st.moves > 0){
+      ui.stAvgV.textContent = `${Math.round(st.totalTurnTimeMs / st.moves)} ms`;
+    } else {
+      ui.stAvgV.textContent = "—";
+    }
+
+    ui.statsTag.textContent = (state.phase==="END") ? "final" : "live";
+    ui.statsTag.className = "tag " + ((state.phase==="END") ? "bad" : "good");
+  }
+
+  function renderPieces(){
+    ensureDerived(state);
+    for (const p of Object.values(state.pieces)){
+      updatePieceEl(p);
+    }
+    cleanupPieceEls();
+  }
+
+  function openGameOver(){
+    const txt = t();
+    const st = state.stats;
+
+    ui.goTitle.textContent = txt.goTitle;
+
+    const end = st?.endTime ?? performance.now();
+    const dur = fmtTime((end - (st?.startTime ?? end)));
+
+    const winnerLine = state.winner ? `${txt.winner}: ${state.winner}` : txt.draw;
+    const endedBy = st?.endedBy || "subjugation";
+
+    ui.goText.textContent =
+`Result: ${winnerLine}
+Ended by: ${endedBy}
+
+Stats:
+• Moves: ${st?.moves ?? 0}
+• Duration: ${dur}
+• White subjugated: ${st?.whiteSubjugated ?? 0}
+• Black subjugated: ${st?.blackSubjugated ?? 0}
+• White lost: ${st?.whiteLost ?? 0}
+• Black lost: ${st?.blackLost ?? 0}
+• Avg move time: ${st?.moves ? Math.round(st.totalTurnTimeMs / st.moves) + " ms" : "—"}
+`;
+    ui.gameOverOverlay.classList.add("show");
+  }
+
+  function renderAll(skipHighlights=false){
+    renderHeader();
+    renderSeals();
+    renderPieces();
+    renderStats();
+    if (!skipHighlights) renderHighlights();
+    renderHints();
+
+    if (state.phase==="END"){
+      const txt = t();
+      if (state.winner){
+        toast(txt.gameOver(`${txt.winner}: ${state.winner}`));
+        sfxWin();
+      } else {
+        toast(txt.gameOver(txt.draw));
+      }
+      openGameOver();
+    }
+  }
+
+  function updateModeButtons(){
+    ui.btnPlace.classList.toggle("primary", mode.value==="PLACE");
+    ui.btnShield.classList.toggle("primary", mode.value==="SHIELD");
+  }
+
+  /* ---------- Undo ---------- */
+  function undo(){
+    if (!history.length) return;
+    const last = history[history.length-1];
+    if (last.meta && last.meta.blockUndo){
+      toast(t().cannotUndoAfterPass);
+      return;
+    }
+    const item = history.pop();
+    state = deepClone(item.snapshot);
+    selection.clear();
+    mode.set("MOVE");
+    toast(t().savedByUndo);
+    renderAll(true);
+    scheduleBots();
+  }
+
+  /* ---------- Rules / Changelog ---------- */
+  function openRules(){
+    ui.rulesOverlay.classList.add("show");
+    ui.rulesTitle.textContent = t().rulesTitle;
+    ui.rulesText.textContent = t().rulebookText;
+  }
+  function openChangelog(){
+    ui.logOverlay.classList.add("show");
+    ui.logTitle.textContent = t().logTitle;
+    ui.logText.textContent = t().logText;
+  }
+
+  /* ---------- Events ---------- */
+  boardEl.addEventListener("click", (ev)=>{
+    const target = ev.target;
+    const cell = target.closest(".cell");
+    if (!cell) return;
+
+    const x = parseInt(cell.dataset.x, 10);
+    const y = parseInt(cell.dataset.y, 10);
+
+    const side = state.turn;
+    const ctrl = getSideController(side);
+    const humanTurn = (ctrl === "HUMAN");
+    if (!humanTurn){
+      toast(t().notYourTurn);
+      return;
+    }
+
+    const pieceEl = target.closest(".piece");
+    if (pieceEl){
+      const pid = pieceEl.dataset.pid;
+      const p = state.pieces[pid];
+      if (!p) return;
+      selection.pieceId = pid;
+      mode.set(mode.value==="PLACE" ? "MOVE" : mode.value);
+      renderAll();
+      return;
+    }
+
+    if (mode.value==="PLACE"){
+      pushHistory(deepClone(state), {blockUndo:false});
+      const res = applyAction(state, {kind:"PLACE", x, y});
+      if (!res.ok){
+        history.pop();
+        if (res.reason==="selfmate"){
+          sfxWarn();
+          showWarn(t().selfMateWarn, t().selfMateBody);
+        } else toast(res.reason);
+        return;
+      }
+      sfxMove();
+      selection.clear();
+      renderAll();
+      scheduleBots();
+      return;
+    }
+
+    if (mode.value==="SHIELD"){
+      const lordId = selection.pieceId;
+      const lord = state.pieces[lordId];
+      if (!lord || lord.rank!==4 || lord.owner!==side){
+        toast(t().needSelectLord);
+        return;
+      }
+      const tid = state.board[y][x];
+      if (!tid) return;
+      pushHistory(deepClone(state), {blockUndo:false});
+      const res = applyAction(state, {kind:"SHIELD_TOGGLE", lordId, targetId: tid});
+      if (!res.ok){
+        history.pop();
+        toast(res.reason);
+        return;
+      }
+      renderAll();
+      return;
+    }
+
+    if (mode.value==="MOVE" && selection.pieceId && state.phase==="PLAY"){
+      const p = state.pieces[selection.pieceId];
+      if (!p || p.owner!==side) return;
+      if (state.board[y][x]!==null) return;
+
+      pushHistory(deepClone(state), {blockUndo:false});
+      const res = applyAction(state, {kind:"MOVE", id: p.id, toX:x, toY:y});
+      if (!res.ok){
+        history.pop();
+        if (res.reason==="selfmate"){
+          sfxWarn();
+          showWarn(t().selfMateWarn, t().selfMateBody);
+        } else toast(res.reason);
+        return;
+      }
+
+      sfxMove();
+      selection.clear();
+      renderAll();
+      scheduleBots();
+    }
+  });
+
+  ui.btnNew.addEventListener("click", ()=>{
+    history.length = 0;
+    state = newState();
+    resetBotPlans();
+    selection.clear();
+    mode.set("MOVE");
+    botsEnabled = true;
+    setStatus(t().idle, "");
+    renderAll(true);
+    scheduleBots();
+  });
+
+  ui.btnUndo.addEventListener("click", ()=> undo());
+
+  ui.btnFlip.addEventListener("click", ()=>{
+    flipped = !flipped;
+    boardEl.classList.toggle("flip", flipped);
+  });
+
+  ui.btnRules.addEventListener("click", openRules);
+  ui.rulesClose.addEventListener("click", ()=> ui.rulesOverlay.classList.remove("show"));
+  ui.rulesOverlay.addEventListener("click", (e)=>{
+    if (e.target === ui.rulesOverlay) ui.rulesOverlay.classList.remove("show");
+  });
+
+  ui.btnTitleRules.addEventListener("click", openRules);
+  ui.btnTitleChangelog.addEventListener("click", openChangelog);
+
+  ui.logClose.addEventListener("click", ()=> ui.logOverlay.classList.remove("show"));
+  ui.logOverlay.addEventListener("click", (e)=>{
+    if (e.target === ui.logOverlay) ui.logOverlay.classList.remove("show");
+  });
+
+  ui.warnOk.addEventListener("click", ()=> ui.warnOverlay.classList.remove("show"));
+  ui.warnRules.addEventListener("click", ()=> { ui.warnOverlay.classList.remove("show"); openRules(); });
+  ui.warnOverlay.addEventListener("click", (e)=>{
+    if (e.target === ui.warnOverlay) ui.warnOverlay.classList.remove("show");
+  });
+
+  ui.goClose.addEventListener("click", ()=> ui.gameOverOverlay.classList.remove("show"));
+  ui.gameOverOverlay.addEventListener("click", (e)=>{
+    if (e.target === ui.gameOverOverlay) ui.gameOverOverlay.classList.remove("show");
+  });
+
+  ui.btnPlace.addEventListener("click", ()=>{
+    if (getSideController(state.turn) !== "HUMAN") { toast(t().notYourTurn); return; }
+    if (state.phase==="END") return;
+    mode.set(mode.value==="PLACE" ? "MOVE" : "PLACE");
+  });
+
+  ui.btnShield.addEventListener("click", ()=>{
+    if (getSideController(state.turn) !== "HUMAN") { toast(t().notYourTurn); return; }
+    if (state.phase==="END") return;
+
+    const p = selection.pieceId ? state.pieces[selection.pieceId] : null;
+    if (!p || p.owner!==state.turn || p.rank!==4){
+      toast(t().needSelectLord);
+      return;
+    }
+    mode.set(mode.value==="SHIELD" ? "MOVE" : "SHIELD");
+  });
+
+  ui.btnUpgrade.addEventListener("click", ()=>{
+    if (getSideController(state.turn) !== "HUMAN") { toast(t().notYourTurn); return; }
+    if (state.phase==="END") return;
+
+    const p = selection.pieceId ? state.pieces[selection.pieceId] : null;
+    if (!p || p.owner!==state.turn){
+      toast(t().needSelectOwnPiece);
+      return;
+    }
+    if (p.rank===5 || p.rank>=4){
+      toast(t().needSelectUpgradeable);
+      return;
+    }
+
+    pushHistory(deepClone(state), {blockUndo:false});
+    const res = applyAction(state, {kind:"UPGRADE", id: p.id});
+    if (!res.ok){
+      history.pop();
+      if (res.reason==="selfmate"){
+        sfxWarn();
+        showWarn(t().selfMateWarn, t().selfMateBody);
+      } else toast(res.reason);
+      return;
+    }
+
+    const el = pieceElsById.get(p.id);
+    if (el) pulseClass(el, "upgrading", 240);
+    sfxUpgrade();
+
+    renderAll();
+    scheduleBots();
+  });
+
+  ui.btnPass.addEventListener("click", ()=>{
+    if (getSideController(state.turn) !== "HUMAN") { toast(t().notYourTurn); return; }
+    if (state.phase!=="SETUP") return;
+
+    if (state.setup.actionsSincePass <= 0){
+      toast(t().passNeedAction);
+      return;
+    }
+
+    pushHistory(deepClone(state), {blockUndo:true});
+    const res = applyAction(state, {kind:"PASS"});
+    if (!res.ok){
+      history.pop();
+      toast(res.reason);
+      return;
+    }
+
+    selection.clear();
+    mode.set("MOVE");
+    renderAll();
+    scheduleBots();
+  });
+
+  ui.btnStartPlay.addEventListener("click", ()=>{
+    if (state.phase!=="SETUP") return;
+    if (!canStartPlay(state)){
+      toast(t().cantStartPlay);
+      return;
+    }
+    pushHistory(deepClone(state), {blockUndo:false});
+    const res = applyAction(state, {kind:"START_PLAY"});
+    if (!res.ok){
+      history.pop();
+      toast(res.reason);
+      return;
+    }
+    toast(t().startedPlay);
+    selection.clear();
+    mode.set("MOVE");
+    renderAll();
+    scheduleBots();
+  });
+
+  ui.btnStopBots.addEventListener("click", ()=>{
+    botsEnabled = !botsEnabled;
+    if (botsEnabled){
+      setStatus(t().idle, "");
+      scheduleBots();
+    } else {
+      setStatus(t().stopped, "bad");
+    }
+  });
+
+  ui.btnResign.addEventListener("click", ()=>{
+    if (state.phase==="END") return;
+    pushHistory(deepClone(state), {blockUndo:false});
+    const side = state.turn;
+    const res = applyAction(state, {kind:"RESIGN"});
+    if (!res.ok){
+      history.pop();
+      toast(res.reason);
+      return;
+    }
+    toast(t().resigned(side));
+    renderAll();
+  });
+
+  function toggleSound(){
+    soundEnabled = !soundEnabled;
+    ui.btnSound.textContent = soundEnabled ? t().soundOn : t().soundOff;
+    ui.btnSound.className = soundEnabled ? "good" : "bad";
+    ui.btnTitleSound.textContent = soundEnabled ? t().soundOn : t().soundOff;
+    ui.btnTitleSound.className = soundEnabled ? "good" : "bad";
+    if (soundEnabled) ensureAudio();
+  }
+
+  ui.btnSound.addEventListener("click", toggleSound);
+  ui.btnTitleSound.addEventListener("click", toggleSound);
+
+  function applyLanguageEverywhere(){
+    const txt = t();
+
+    ui.verBadge.textContent = VERSION;
+    ui.verTag.textContent = VERSION;
+
+    ui.titleSub.textContent = txt.titleSub;
+    ui.tileHow.textContent = txt.tileHow;
+    ui.tileQuick.textContent = txt.tileQuick;
+    ui.tileQuickText.textContent = txt.tileQuickText;
+
+    ui.btnPlay.textContent = txt.play;
+    ui.btnTitleChangelog.textContent = txt.changelog;
+    ui.btnTitleNew.textContent = txt.reset;
+
+    ui.lblWhiteTitle.textContent = txt.white;
+    ui.lblBlackTitle.textContent = txt.black;
+    ui.lblLangTitle.textContent = "UI";
+
+    ui.btnTitleSound.textContent = soundEnabled ? txt.soundOn : txt.soundOff;
+    ui.btnTitleSound.className = soundEnabled ? "good" : "bad";
+
+    ui.stMovesK.textContent = txt.stMovesK;
+    ui.stTimeK.textContent = txt.stTimeK;
+    ui.stWSubK.textContent = txt.stWSubK;
+    ui.stBSubK.textContent = txt.stBSubK;
+    ui.stWLostK.textContent = txt.stWLostK;
+    ui.stBLostK.textContent = txt.stBLostK;
+    ui.stAvgK.textContent = txt.stAvgK;
+
+    renderAll(true);
+  }
+
+  ui.lang.addEventListener("change", ()=> applyLanguageEverywhere());
+  ui.langTitle.addEventListener("change", ()=>{
+    ui.lang.value = ui.langTitle.value;
+    applyLanguageEverywhere();
+  });
+
+  function syncTitleToMain(){
+    ui.whiteCtrl.value = ui.whiteCtrlTitle.value;
+    ui.blackCtrl.value = ui.blackCtrlTitle.value;
+    resetBotPlans();
+    scheduleBots();
+  }
+  function syncMainToTitle(){
+    ui.whiteCtrlTitle.value = ui.whiteCtrl.value;
+    ui.blackCtrlTitle.value = ui.blackCtrl.value;
+  }
+
+  ui.whiteCtrlTitle.addEventListener("change", syncTitleToMain);
+  ui.blackCtrlTitle.addEventListener("change", syncTitleToMain);
+  ui.whiteCtrl.addEventListener("change", ()=>{ syncMainToTitle(); resetBotPlans(); scheduleBots(); });
+  ui.blackCtrl.addEventListener("change", ()=>{ syncMainToTitle(); resetBotPlans(); scheduleBots(); });
+
+  ui.btnTitleNew.addEventListener("click", ()=>{
+    history.length = 0;
+    state = newState();
+    resetBotPlans();
+    selection.clear();
+    mode.set("MOVE");
+    botsEnabled = true;
+    renderAll(true);
+  });
+
+  ui.btnPlay.addEventListener("click", ()=>{
+    ensureAudio();
+    ui.lang.value = ui.langTitle.value;
+    syncTitleToMain();
+    applyLanguageEverywhere();
+
+    ui.titleScreen.style.display = "none";
+    toast(`${VERSION} ready.`);
+    scheduleBots();
+  });
+
+  /* ---------- Diff-driven micro SFX ---------- */
+  let prevPieceIds = new Set();
+  let prevRanks = new Map();
+
+  function sfxAndMicroAnimDiffs(){
+    const nowIds = new Set(Object.keys(state.pieces));
+
+    for (const oldId of prevPieceIds){
+      if (!nowIds.has(oldId)){
+        sfxSubjugate();
+        break;
+      }
+    }
+
+    for (const [id, rOld] of prevRanks.entries()){
+      const p = state.pieces[id];
+      if (p && p.rank > rOld){
+        const el = pieceElsById.get(id);
+        if (el) pulseClass(el, "upgrading", 240);
+        sfxUpgrade();
+        break;
+      }
+    }
+
+    prevPieceIds = nowIds;
+    prevRanks = new Map();
+    for (const p of Object.values(state.pieces)){
+      prevRanks.set(p.id, p.rank);
+    }
+  }
+
+  const _renderAll = renderAll;
+  renderAll = function(skipHighlights=false){
+    _renderAll(skipHighlights);
+    sfxAndMicroAnimDiffs();
+  };
+
+  /* ---------- Init ---------- */
+  function init(){
+    ui.verBadge.textContent = VERSION;
+    ui.verTag.textContent = VERSION;
+
+    buildBoardOnce();
+    renderAll(true);
+    applyLanguageEverywhere();
+    syncMainToTitle();
+  }
+
+  init();
+})();
+</script>
+
+<script>
+  // PWA: register Service Worker (offline + install)
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
+      try{
+        const reg = await navigator.serviceWorker.register("./sw.js");
+        // Try to fetch the newest SW in background
+        reg.update?.();
+      }catch(_){}
+    });
+  }
+</script>
+</body>
+</html>
